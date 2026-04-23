@@ -35,7 +35,6 @@ export default function ChatWidget() {
   }, [messages, isTyping, isOpen]);
 
   const handleSend = async () => {
-    if (!checkProStatus()) return;
     if (!input.trim()) return;
 
     const userMessage = { id: Date.now(), text: input.trim(), sender: 'user' };
