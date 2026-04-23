@@ -65,14 +65,8 @@ export default function Contact() {
     { 
       icon: <Mail className="text-blue-500" />, 
       title: isAr ? 'البريد الإلكتروني' : 'Email Us', 
-      value: 'support@cvmister.com',
+      value: 'ahmedalhammadi850@gmail.com',
       desc: isAr ? 'دعم فني سريع على مدار الساعة' : 'Fast support 24/7'
-    },
-    { 
-      icon: <Phone className="text-indigo-500" />, 
-      title: isAr ? 'اتصل بنا' : 'Call Us', 
-      value: '+967 77X XXX XXX',
-      desc: isAr ? 'متاح من الأحد إلى الخميس' : 'Available Sun to Thu'
     },
     { 
       icon: <MapPin className="text-purple-500" />, 
