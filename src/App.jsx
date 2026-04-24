@@ -1,6 +1,5 @@
 // ============================================================
-// CV-Mister — App.jsx
-// Routing, Auth Protection, Theme, and Global States
+// CV-Mister — App.jsx (Production Sync)
 // ============================================================
 
 import React, { useEffect } from 'react';
