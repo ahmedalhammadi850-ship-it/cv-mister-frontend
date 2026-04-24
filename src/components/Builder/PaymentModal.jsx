@@ -13,6 +13,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useSocket } from '../../hooks/useSocket';
 import Tesseract from 'tesseract.js';
+import { API_ROUTES } from '../../api/config';
 
 export default function PaymentModal({ isOpen, onClose, templateName }) {
   const [dragOver, setDragOver] = useState(false);
@@ -81,7 +82,7 @@ export default function PaymentModal({ isOpen, onClose, templateName }) {
 
     const checkStatus = async () => {
       try {
-        const res = await axios.get('/api/upgrade/status', {
+        const res = await axios.get(`${API_ROUTES.UPGRADE}/status`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -172,7 +173,7 @@ export default function PaymentModal({ isOpen, onClose, templateName }) {
 
       intervalId = setInterval(async () => {
         try {
-          const res = await axios.get('/api/upgrade/status', {
+          const res = await axios.get(`${API_ROUTES.UPGRADE}/status`, {
             headers: { Authorization: `Bearer ${token}` },
           });
 
@@ -251,7 +252,7 @@ export default function PaymentModal({ isOpen, onClose, templateName }) {
 
     try {
       // STEP 1: Save payment record to MongoDB (status: pending)
-      await axios.post('/api/payments/create', {
+      await axios.post(`${API_ROUTES.PAYMENTS}/create`, {
         proofImage: fileDataUrl,
         amount: 25,
       }, {
@@ -293,7 +294,7 @@ export default function PaymentModal({ isOpen, onClose, templateName }) {
         setError(failReason);
 
         try {
-          const rejectRes = await axios.post('/api/payments/update-status', {
+          const rejectRes = await axios.post(`${API_ROUTES.PAYMENTS}/update-status`, {
             status: 'rejected',
             reason: failReason,
           }, {
@@ -313,7 +314,7 @@ export default function PaymentModal({ isOpen, onClose, templateName }) {
         setVerifyProgress(90);
         setVerifyStatus('تم التأكد بنجاح! جاري التفعيل...');
 
-        await axios.post('/api/payments/update-status', {
+        await axios.post(`${API_ROUTES.PAYMENTS}/update-status`, {
           status: 'approved',
           activatedBy: 'AI Agent (n8n)'
         }, {

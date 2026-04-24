@@ -13,6 +13,7 @@ import ProtectedRoute from './components/Layout/ProtectedRoute';
 import ProtectedAdminRoute from './components/Layout/ProtectedAdminRoute';
 import ChatWidget from './components/Common/ChatWidget';
 import { useSocket } from './hooks/useSocket';
+import { API_ROUTES } from './api/config';
 
 import Landing from './pages/Landing';
 import About from './pages/About';
@@ -83,7 +84,7 @@ function AppContent() {
       if (user && user._id) {
         try {
           const token = useAuthStore.getState().token;
-          const res = await import('axios').then(m => m.default.get('/api/auth/me', {
+          const res = await import('axios').then(m => m.default.get(`${API_ROUTES.AUTH}/me`, {
             headers: { Authorization: `Bearer ${token}` }
           }));
           if (res.data) {
