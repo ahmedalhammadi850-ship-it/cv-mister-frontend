@@ -9,6 +9,9 @@ import useStyleStore from '../../store/useStyleStore';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
+import { sendPasswordResetEmail } from 'firebase/auth';
+import { auth } from '../../config/firebase';
+
 export default function ForgotPassword() {
   const language = useStyleStore((s) => s.language);
   const [email, setEmail] = useState('');
@@ -18,10 +21,11 @@ export default function ForgotPassword() {
     e.preventDefault();
     setLoading(true);
     try {
-      await axios.post('/api/auth/forgot-password', { email });
+      await sendPasswordResetEmail(auth, email);
       toast.success(language === 'ar' ? 'تم إرسال رابط الاستعادة إلى بريدك' : 'Recovery link sent to your email');
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Error sending link');
+      toast.error(language === 'ar' ? 'فشل إرسال الرابط. تأكد من صحة البريد الإلكتروني.' : 'Failed to send link. Please check the email.');
+      console.error(err);
     } finally {
       setLoading(false);
     }
