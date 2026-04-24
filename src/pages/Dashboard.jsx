@@ -7,6 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import useSocket from '../hooks/useSocket';
+import { API_ROUTES } from '../api/config';
 import { 
   FileText, 
   Trash2, 
@@ -123,9 +124,9 @@ export default function Dashboard() {
       try {
         const headers = { 'Authorization': `Bearer ${token}` };
         const [resumesRes, lettersRes, settingsRes] = await Promise.all([
-          fetch('/api/resumes', { headers }),
-          fetch('/api/cover-letters', { headers }),
-          fetch('/api/content') // Public settings
+          fetch(API_ROUTES.RESUMES, { headers }),
+          fetch(API_ROUTES.COVER_LETTERS, { headers }),
+          fetch(API_ROUTES.CONTENT) // Public settings
         ]);
         const resData = await resumesRes.json();
         const letData = await lettersRes.json();

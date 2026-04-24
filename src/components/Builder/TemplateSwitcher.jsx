@@ -7,6 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import { TEMPLATE_LIST } from '../../utils/constants';
 import useStyleStore from '../../store/useStyleStore';
+import { API_ROUTES } from '../../api/config';
 import useAuthStore from '../../store/useAuthStore';
 import { t } from '../../utils/locales';
 import PaymentModal from './PaymentModal';
@@ -34,7 +35,7 @@ export default function TemplateSwitcher() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const res = await fetch('/api/content');
+        const res = await fetch(API_ROUTES.CONTENT);
         const data = await res.json();
         if (data.success && data.settings?.templates) {
           setTemplateSettings(data.settings.templates);
