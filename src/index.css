@@ -851,6 +851,7 @@ body {
   font-weight: 900;
   background: linear-gradient(135deg, var(--accent-color), #A78BFA);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   margin-bottom: 16px;
   opacity: 0.8;
@@ -2007,7 +2008,9 @@ body {
 .navbar-brand {
   font-size: 18px; font-weight: 800;
   background: linear-gradient(135deg, #6366F1, #8B5CF6);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
   display: flex; align-items: center; gap: 8px;
 }
 
@@ -2072,7 +2075,6 @@ body {
     background: #fff !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
-    color-adjust: exact !important;
   }
   
   #resume-canvas { width: 210mm !important; height: 297mm !important; overflow: hidden !important; }
