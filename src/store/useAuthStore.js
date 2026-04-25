@@ -83,7 +83,7 @@ const useAuthStore = create(
           await updateProfile(firebaseUser, { displayName: fullName });
 
           // Sync with our backend
-          await axios.post(`${API_ROUTES.AUTH}/sync`, {
+          const syncRes = await axios.post(`${API_ROUTES.AUTH}/sync`, {
             firebaseUID: firebaseUser.uid,
             email: firebaseUser.email,
             fullName: fullName
@@ -94,9 +94,8 @@ const useAuthStore = create(
           const token = await firebaseUser.getIdToken();
           set({ 
             user: { 
+              ...syncRes.data.user,
               firebaseUID: firebaseUser.uid, 
-              email: firebaseUser.email, 
-              fullName: fullName,
               emailVerified: false 
             }, 
             token, 
@@ -105,7 +104,17 @@ const useAuthStore = create(
           
           return true;
         } catch (err) {
-          set({ error: err.message, loading: false });
+          let errorMsg = err.message;
+          if (err.code === 'auth/email-already-in-use') {
+            errorMsg = 'هذا البريد الإلكتروني مسجل بالفعل. يرجى تسجيل الدخول بدلاً من ذلك.';
+          } else if (err.code === 'auth/weak-password') {
+            errorMsg = 'كلمة المرور ضعيفة جداً. يجب أن تكون 6 أحرف على الأقل.';
+          } else if (err.code === 'auth/invalid-email') {
+            errorMsg = 'البريد الإلكتروني غير صالح. يرجى التحقق من الصيغة.';
+          } else if (err.code === 'auth/too-many-requests') {
+            errorMsg = 'تم تجاوز عدد المحاولات المسموحة. يرجى المحاولة لاحقاً.';
+          }
+          set({ error: errorMsg, loading: false });
           return false;
         }
       },
@@ -121,12 +130,21 @@ const useAuthStore = create(
           const res = await axios.put(`${API_ROUTES.AUTH}/profile`, data, {
             headers: { Authorization: `Bearer ${token}` }
           });
-          set({ user: res.data, token: res.data.token, loading: false });
+          set({ user: res.data, loading: false });
           return true;
         } catch (err) {
           set({ error: err.response?.data?.error || 'Update failed', loading: false });
           return false;
         }
+      },
+
+      // ── New: Sync state directly from Socket.IO ───────────────
+      syncLocalUser: (data) => {
+        if (!data) return;
+        set((state) => ({
+          user: state.user ? { ...state.user, ...data } : null
+        }));
+        console.log('[AuthStore] 🔄 State synced with real-time data:', data);
       },
 
       getAuthHeader: () => {

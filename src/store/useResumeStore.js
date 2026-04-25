@@ -223,17 +223,35 @@ const useResumeStore = create(
             }),
           });
 
-          if (!response.ok) throw new Error('Save failed');
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            if (errorData.code === 'CREDITS_EXHAUSTED') {
+              // Dispatch an event or set a state that the UI can pick up to show the modal
+              window.dispatchEvent(new CustomEvent('credits-exhausted'));
+              throw new Error('CREDITS_EXHAUSTED');
+            }
+            if (errorData.code === 'SUBSCRIPTION_EXPIRED' || errorData.code === 'LIMIT_REACHED') {
+              window.dispatchEvent(new CustomEvent('subscription-limit', { detail: errorData.error }));
+              throw new Error(errorData.code);
+            }
+            throw new Error('Save failed');
+          }
 
           const result = await response.json();
+          
+          // Update the auth store with the remaining credits if returned
+          if (result.remainingCredits !== undefined) {
+             useAuthStore.getState().syncLocalUser({ resumeCredits: result.remainingCredits });
+          }
+
           set({
             resumeId: result._id || result.id || state.resumeId,
             saveStatus: 'saved',
             lastSaved: new Date().toISOString(),
           });
         } catch (err) {
-          console.warn('Backend save failed, keeping localStorage:', err.message);
-          set({ saveStatus: 'saved', lastSaved: new Date().toISOString() });
+          console.warn('Backend save failed:', err.message);
+          set({ saveStatus: err.message === 'CREDITS_EXHAUSTED' ? 'unsaved' : 'saved', lastSaved: new Date().toISOString() });
         }
       },
 

@@ -45,19 +45,25 @@ function AppContent() {
   const isAppRoute = location.pathname.startsWith('/builder') || location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/admin');
 
   // ── Global Real-time Sync for User Plan ──────────────────────
+  const userId = user?._id || user?.id || user?.firebaseUID;
+  console.log('[App] 🔌 Socket room ID:', userId);
+
   useSocket({
-    room: user?._id || user?.id,
+    room: userId,
     events: {
       'my-plan-updated': (event) => {
         console.log('[App] 🌐 Global Real-time Plan Update:', event.data);
-        const { plan, status, isPremium, rejectionReason } = event.data;
+        const { plan, status, isPremium, rejectionReason, resumesLimit, resumeCredits, subscriptionEndDate } = event.data;
         
-        // Update user state dynamically — including isPremium for template locking
+        // Update user state dynamically — including isPremium and resumeCredits
         useAuthStore.setState((state) => ({ 
            user: { 
              ...state.user, 
              ...(plan && { plan }), 
              ...(status && { paymentStatus: status }),
+             ...(resumesLimit !== undefined && { resumesLimit }),
+             ...(resumeCredits !== undefined && { resumeCredits }),
+             ...(subscriptionEndDate && { subscriptionEndDate }),
              isPremium: isPremium !== undefined ? isPremium : (plan === 'pro')
            } 
         }));
@@ -68,34 +74,39 @@ function AppContent() {
             { duration: 8000, id: 'plan-deactivated', icon: '🔒' }
           ));
         } else if (plan === 'pro') {
-          import('react-hot-toast').then(m => m.default.success('مبروك! تم تفعيل اشتراك Pro الخاص بك! ✨', { duration: 4000 }));
+          import('react-hot-toast').then(m => m.default.success('مبروك! تم تفعيل اشتراك Pro الخاص بك! ✨ القوالب المدفوعة مفتوحة الآن.', { duration: 5000, id: 'plan-activated' }));
         }
       }
     }
   });
+
 
   // Load CMS content and Sync dark class with HTML element
   useEffect(() => {
     loadSettings(); // Fetch content from backend
 
     // ── Mandatory Plan Sync on Mount ─────────────────────────
+    // Also fixes missing _id issue for Socket.IO room join
     const syncUserStatus = async () => {
-      if (user && user._id) {
-        try {
-          const token = useAuthStore.getState().token;
-          const res = await import('axios').then(m => m.default.get(`${API_ROUTES.AUTH}/me`, {
-            headers: { Authorization: `Bearer ${token}` }
+      if (!user) return;
+      try {
+        const token = useAuthStore.getState().token;
+        if (!token) return;
+        const res = await import('axios').then(m => m.default.get(`${API_ROUTES.AUTH}/me`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }));
+        if (res.data && res.data._id) {
+          console.log('[App] 🔄 User synced on mount — _id:', res.data._id, 'plan:', res.data.plan);
+          useAuthStore.setState((state) => ({ 
+            user: { ...state.user, ...res.data, emailVerified: state.user?.emailVerified } 
           }));
-          if (res.data) {
-            console.log('[App] 🔄 User status synced on mount:', res.data.plan);
-            useAuthStore.setState({ user: { ...user, ...res.data } });
-          }
-        } catch (err) {
-          console.error('[App] ❌ Status sync failed:', err);
         }
+      } catch (err) {
+        console.error('[App] ❌ Status sync failed:', err);
       }
     };
     syncUserStatus();
+
     
     if (darkMode) {
       document.documentElement.classList.add('dark');

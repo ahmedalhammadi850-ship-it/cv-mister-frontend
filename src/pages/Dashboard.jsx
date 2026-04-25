@@ -34,7 +34,8 @@ import {
   Layout,
   ScanSearch,
   Clock,
-  Calendar
+  Calendar,
+  Lock as LockIcon
 } from 'lucide-react';
 import useStyleStore from '../store/useStyleStore';
 import useAuthStore from '../store/useAuthStore';
@@ -44,10 +45,12 @@ import toast from 'react-hot-toast';
 import { TEMPLATE_LIST } from '../utils/constants';
 import useCMSStore from '../store/useCMSStore';
 import PaymentModal from '../components/Builder/PaymentModal';
+import CVScanPanel from '../components/Builder/CVScanPanel';
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { user, token, logout, updateProfile } = useAuthStore();
+  const { user, token, logout, updateProfile, syncLocalUser } = useAuthStore();
+
   const language = useStyleStore((s) => s.language);
   const resetResume = useResumeStore((s) => s.resetData);
   const resetStyles = useStyleStore((s) => s.resetStyles);
@@ -66,6 +69,7 @@ export default function Dashboard() {
   const [isFreeAllowed, setIsFreeAllowed] = useState(true); 
   const [templateSettings, setTemplateSettings] = useState({});
   const [isPaymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState(3);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   // ── Mobile Detection ─────────────────────────────────────
@@ -90,7 +94,7 @@ export default function Dashboard() {
       'my-plan-updated': (event) => {
         console.log('[Socket] Plan updated received:', event.data);
         if (event.data) {
-          updateProfile(event.data);
+          syncLocalUser(event.data);
           toast.success(language === 'ar' ? 'تم تحديث خطة اشتراكك!' : 'Your subscription plan has been updated!');
         }
       }
@@ -151,7 +155,7 @@ export default function Dashboard() {
   const handleDelete = async (type, id) => {
     if (!window.confirm(language === 'ar' ? 'هل أنت متأكد من الحذف؟' : 'Are you sure you want to delete?')) return;
     try {
-      await fetch(`/api/${type === 'resume' ? 'resumes' : 'cover-letters'}/${id}`, { 
+      await fetch(`${type === 'resume' ? API_ROUTES.RESUMES : API_ROUTES.COVER_LETTERS}/${id}`, { 
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -190,15 +194,14 @@ export default function Dashboard() {
       }
     }
 
-    const limit = user?.resumesLimit || 2;
-    const currentCount = resumes.length;
+    const credits = user?.resumeCredits || 0;
 
-    if (currentCount >= limit) {
+    if (credits <= 0) {
       toast.error(language === 'ar' 
-        ? `لقد وصلت للحد الأقصى لخطتك الحالية (${currentCount}/${limit}). ${isPremium ? 'تواصل مع الإدارة لزيادة الحد.' : 'قم بالترقية إلى Pro.'}` 
-        : `You have reached the limit for your current plan (${currentCount}/${limit}). ${isPremium ? 'Contact admin to increase limit.' : 'Upgrade to Pro.'}`
+        ? 'رصيدك من السير الذاتية قد نفد. يرجى الدفع للحصول على رصيد إضافي.' 
+        : 'Your resume credits have been exhausted. Please pay to add more.'
       );
-      setActiveTab('pricing');
+      setPaymentModalOpen(true);
       return;
     }
 
@@ -267,7 +270,7 @@ export default function Dashboard() {
           transition: 'all 0.3s ease'
         }}
       >
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '16px' }}>
           <div style={{ padding: '0 16px 24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(45deg, #3B82F6, #8B5CF6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '18px', fontWeight: 800 }}>
               {user?.fullName?.charAt(0)}
@@ -325,17 +328,18 @@ export default function Dashboard() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
                   <span style={{ fontWeight: 600 }}>
                     {language === 'ar' 
-                      ? `المتبقي: (${resumes.length} من ${user?.resumesLimit || 1})` 
-                      : `Remaining: (${resumes.length} of ${user?.resumesLimit || 1})`
+                      ? `المتبقي: ${user?.resumeCredits || 0} سير ذاتية` 
+                      : `Remaining: ${user?.resumeCredits || 0} resumes`
                     }
                   </span>
                 </div>
                 <div style={{ height: '5px', background: 'rgba(0,0,0,0.05)', borderRadius: '10px', overflow: 'hidden' }}>
                   <div style={{ 
-                    width: `${Math.min((resumes.length / (user?.resumesLimit || 1)) * 100, 100)}%`, 
+                    width: user?.resumeCredits > 0 ? '100%' : '0%', 
                     height: '100%', 
-                    background: 'linear-gradient(90deg, #3B82F6, #2563EB)',
-                    borderRadius: '10px'
+                    background: user?.resumeCredits > 0 ? 'linear-gradient(90deg, #10B981, #059669)' : 'var(--text-muted)',
+                    borderRadius: '10px',
+                    transition: 'width 0.3s ease'
                   }} />
                 </div>
               </div>
@@ -649,7 +653,7 @@ export default function Dashboard() {
                         </div>
                         <button 
                           onClick={(e) => { e.stopPropagation(); handleDelete(doc.type, doc._id); }} 
-                          style={{ background: 'var(--bg-elevated)', padding: '6px', borderRadius: '6px', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', opacity: 0, transition: 'all 0.2s' }}
+                          style={{ background: 'var(--bg-elevated)', padding: '6px', borderRadius: '6px', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', opacity: 1, transition: 'all 0.2s' }}
                           onMouseEnter={(e) => { e.currentTarget.style.color = '#EF4444'; e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'; }}
                           onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'var(--bg-elevated)'; }}
                           className="delete-hover-btn"
@@ -745,9 +749,35 @@ export default function Dashboard() {
                         alignItems: 'center',
                         justifyContent: 'center',
                         fontSize: '48px',
-                        color: tpl.color
+                        color: tpl.color,
+                        position: 'relative',
+                        overflow: 'hidden'
                       }}>
                         {tpl.icon}
+                        {/* Lock overlay for free users on premium templates */}
+                        {isPremium && user?.plan !== 'pro' && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '12px',
+                            left: '12px',
+                            pointerEvents: 'none',
+                            transition: 'all 0.5s ease',
+                            zIndex: 5
+                          }}>
+                            <div style={{
+                              background: 'var(--bg-elevated)',
+                              padding: '6px',
+                              borderRadius: '8px',
+                              border: '1px solid var(--border-default)',
+                              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}>
+                              <LockIcon size={16} color="var(--text-secondary)" />
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '4px' }}>
@@ -771,13 +801,28 @@ export default function Dashboard() {
                           padding: '10px',
                           borderRadius: '10px',
                           border: 'none',
-                          background: isPremium ? 'linear-gradient(135deg, #fbbf24, #d97706)' : 'var(--bg-elevated)',
-                          color: isPremium ? '#fff' : 'var(--text-primary)',
+                          background: (isPremium && user?.plan !== 'pro') 
+                            ? 'rgba(100,116,139,0.15)' 
+                            : isPremium 
+                              ? 'linear-gradient(135deg, #fbbf24, #d97706)' 
+                              : 'var(--bg-elevated)',
+                          color: (isPremium && user?.plan !== 'pro') 
+                            ? 'var(--text-secondary)' 
+                            : isPremium ? '#fff' : 'var(--text-primary)',
                           fontWeight: 600,
-                          cursor: 'pointer'
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          transition: 'all 0.3s ease'
                         }}
                       >
-                        {language === 'ar' ? 'استخدام هذا القالب' : 'Use Template'}
+                        {(isPremium && user?.plan !== 'pro') && <LockIcon size={14} />}
+                        {(isPremium && user?.plan !== 'pro') 
+                          ? (language === 'ar' ? 'يتطلب اشتراك Pro' : 'Requires Pro')
+                          : (language === 'ar' ? 'استخدام هذا القالب' : 'Use Template')
+                        }
                       </button>
                     </div>
                   );
@@ -838,6 +883,7 @@ export default function Dashboard() {
                       style={{ width: '100%', marginBottom: '32px' }}
                       onClick={() => {
                         if (plan.id === 'free') return; // Do nothing for free or navigate to builder
+                        setPaymentAmount(plan.price);
                         setPaymentModalOpen(true);
                       }}
                     >
@@ -976,6 +1022,7 @@ export default function Dashboard() {
         <PaymentModal 
           isOpen={isPaymentModalOpen} 
           onClose={() => setPaymentModalOpen(false)} 
+          amount={paymentAmount}
         />
       </main>
     </div>

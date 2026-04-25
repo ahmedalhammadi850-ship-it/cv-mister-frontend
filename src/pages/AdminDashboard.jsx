@@ -268,7 +268,7 @@ function SettingsPanel() {
         {settingsTab === 'billing' && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
             <div>
-              <label style={labelStyle}>سعر الباقة الاحترافية (ر.س)</label>
+              <label style={labelStyle}>سعر الباقة الاحترافية ($)</label>
               <input
                 type="number"
                 style={inputStyle}

@@ -12,6 +12,8 @@ import ErrorBoundary from '../components/Common/ErrorBoundary';
 import useResumeStore from '../store/useResumeStore';
 import useStyleStore from '../store/useStyleStore';
 import { t } from '../utils/locales';
+import PaymentModal from '../components/Builder/PaymentModal';
+import toast from 'react-hot-toast';
 
 export default function ResumeBuilder() {
   const saveToBackend = useResumeStore((s) => s.saveToBackend);
@@ -33,6 +35,30 @@ export default function ResumeBuilder() {
       saveToBackend();
     }, 5000);
   }, [saveToBackend]);
+
+  const [isPaymentModalOpen, setPaymentModalOpen] = useState(false);
+
+  useEffect(() => {
+    const handleCreditsExhausted = () => {
+      toast.error(language === 'ar' 
+        ? 'رصيدك من السير الذاتية قد نفد. يرجى الدفع لإضافة المزيد.' 
+        : 'Your resume credits have been exhausted. Please pay to add more.');
+      setPaymentModalOpen(true);
+    };
+
+    const handleLimitReached = (e) => {
+      toast.error(e.detail || (language === 'ar' ? 'تم تجاوز الحد المسموح' : 'Limit reached'));
+      setPaymentModalOpen(true);
+    };
+
+    window.addEventListener('credits-exhausted', handleCreditsExhausted);
+    window.addEventListener('subscription-limit', handleLimitReached);
+
+    return () => {
+      window.removeEventListener('credits-exhausted', handleCreditsExhausted);
+      window.removeEventListener('subscription-limit', handleLimitReached);
+    };
+  }, [language]);
 
   useEffect(() => {
     if (saveStatus === 'unsaved') {
@@ -81,6 +107,7 @@ export default function ResumeBuilder() {
           <A4PageWrapper deferredData={deferredData} />
         </ErrorBoundary>
       </div>
+      <PaymentModal isOpen={isPaymentModalOpen} onClose={() => setPaymentModalOpen(false)} />
     </div>
   );
 }

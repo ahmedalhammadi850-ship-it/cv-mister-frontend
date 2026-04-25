@@ -755,7 +755,7 @@ export default function UsersTable({ users: propUsers, refreshKey, onDataChange 
           <table style={{ width: '100%', minWidth: '850px', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                {['المستخدم', 'الخطة', 'تاريخ الانتهاء', 'حد السير', 'تاريخ التسجيل', 'الإجراء'].map((col) => (
+                {['المستخدم', 'الخطة', 'تاريخ الانتهاء', 'تاريخ التسجيل', 'الرصيد', 'الإجراء'].map((col) => (
                   <th
                     key={col}
                     style={{
@@ -904,15 +904,15 @@ export default function UsersTable({ users: propUsers, refreshKey, onDataChange 
                         {formatDate(user.joined || user.createdAt)}
                       </td>
 
-                      {/* Resumes Limit */}
+                      {/* Resume Credits */}
                       <td style={{ padding: '16px 24px' }}>
                         <input 
                           type="number"
-                          defaultValue={user.resumesLimit || 2}
+                          defaultValue={user.resumeCredits !== undefined ? user.resumeCredits : 0}
                           onBlur={(e) => {
-                            const newLimit = parseInt(e.target.value);
-                            if (newLimit !== user.resumesLimit) {
-                              handleUpdateSubscription(userId, { resumesLimit: newLimit });
+                            const newCredits = parseInt(e.target.value);
+                            if (newCredits !== user.resumeCredits) {
+                              handleUpdateSubscription(userId, { resumeCredits: newCredits });
                             }
                           }}
                           style={{

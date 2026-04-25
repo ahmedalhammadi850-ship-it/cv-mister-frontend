@@ -75,7 +75,8 @@ export default function Register() {
       setIsSubmitted(true);
     } else {
       console.error("[Register] Registration failed.");
-      toast.error(language === 'ar' ? 'حدث خطأ أثناء إنشاء الحساب' : 'Registration failed');
+      const storeError = useAuthStore.getState().error;
+      toast.error(storeError || (language === 'ar' ? 'حدث خطأ أثناء إنشاء الحساب' : 'Registration failed'));
     }
   };
 
