@@ -4,8 +4,9 @@
 // ============================================================
 
 // Automatically use Railway URL in production (Vercel) and Localhost during development
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 
-  (import.meta.env.PROD ? 'https://cv-mister-backend-production.up.railway.app' : 'http://localhost:3001');
+export const API_BASE_URL = import.meta.env.PROD 
+  ? 'https://cv-mister-backend-production.up.railway.app' 
+  : 'http://localhost:3001';
 
 
 export const API_ROUTES = {
