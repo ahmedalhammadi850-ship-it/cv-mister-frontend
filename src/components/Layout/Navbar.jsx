@@ -67,7 +67,6 @@ export default function Navbar() {
             allCssText += rule.cssText + '\n';
           }
         } catch (e) {
-          // Cross-origin stylesheets can't be read — fetch them instead
           if (sheet.href) {
             try {
               const res = await fetch(sheet.href);
@@ -91,46 +90,72 @@ export default function Navbar() {
           }
         }
         if (allVars.length > 0) {
-          cssVarsBlock = `.a4-page-outer, .a4-page-content, [data-cv-root] { ${allVars.join('; ')}; }\n`;
+          cssVarsBlock = `:root, .a4-page-outer, .a4-page-content, [data-cv-root] { ${allVars.join('; ')}; }\n`;
         }
       }
 
-      // ── 3. Clone the resume and prepare it for export ──
+      // ── 3. Clone the resume ──
       const clone = resumeEl.cloneNode(true);
 
-      // Remove hidden measurement containers
+      // Only remove the off-screen measurement container (left: -9999px)
       clone.querySelectorAll('[style*="-9999"]').forEach(el => el.remove());
-      clone.querySelectorAll('[style*="visibility: hidden"]').forEach(el => el.remove());
 
-      // Inline critical computed styles on each page (backgrounds, gradients, etc.)
+      // ── 4. DEEP INLINE: Capture computed visual styles on EVERY element ──
+      // This is the key to mirror-image export — we bake all computed
+      // visual properties directly into inline styles so nothing is lost.
+      const VISUAL_PROPS = [
+        'backgroundColor', 'backgroundImage', 'backgroundSize',
+        'backgroundPosition', 'backgroundRepeat', 'background',
+        'color', 'display', 'flexDirection', 'flexWrap', 'flex',
+        'justifyContent', 'alignItems', 'gap', 'columnGap', 'rowGap',
+        'width', 'minWidth', 'maxWidth', 'height', 'minHeight',
+        'borderLeft', 'borderRight', 'borderTop', 'borderBottom',
+        'borderRadius', 'opacity', 'order',
+      ];
+
       const originalPages = resumeEl.querySelectorAll('.a4-page-outer');
       const clonedPages = clone.querySelectorAll('.a4-page-outer');
-      originalPages.forEach((origPage, i) => {
-        if (clonedPages[i]) {
-          const cs = getComputedStyle(origPage);
-          clonedPages[i].style.backgroundColor = cs.backgroundColor;
-          clonedPages[i].style.backgroundImage = cs.backgroundImage;
-          clonedPages[i].style.backgroundSize = cs.backgroundSize;
-          clonedPages[i].style.backgroundPosition = cs.backgroundPosition;
-          clonedPages[i].style.backgroundRepeat = cs.backgroundRepeat;
 
-          // Also inline sidebar/split backgrounds on inner containers
-          const innerDivs = origPage.querySelectorAll('[data-cv-root], aside, .sidebar, .sidebar-top, .sidebar-bottom, .main-content');
-          const clonedDivs = clonedPages[i].querySelectorAll('[data-cv-root], aside, .sidebar, .sidebar-top, .sidebar-bottom, .main-content');
-          innerDivs.forEach((origDiv, j) => {
-            if (clonedDivs[j]) {
-              const divCs = getComputedStyle(origDiv);
-              clonedDivs[j].style.backgroundColor = divCs.backgroundColor;
-              clonedDivs[j].style.backgroundImage = divCs.backgroundImage;
-              clonedDivs[j].style.color = divCs.color;
-            }
-          });
-        }
+      originalPages.forEach((origPage, i) => {
+        if (!clonedPages[i]) return;
+
+        // Inline the page-level background
+        const pageCs = getComputedStyle(origPage);
+        VISUAL_PROPS.forEach(prop => {
+          const val = pageCs[prop];
+          if (val && val !== 'none' && val !== 'auto' && val !== 'normal' && val !== '0px') {
+            clonedPages[i].style[prop] = val;
+          }
+        });
+
+        // Deep-inline all child elements with visual significance
+        const origChildren = origPage.querySelectorAll('*');
+        const cloneChildren = clonedPages[i].querySelectorAll('*');
+
+        origChildren.forEach((origEl, j) => {
+          if (!cloneChildren[j]) return;
+          const cs = getComputedStyle(origEl);
+
+          // Only inline if element has a visible background or is a layout container
+          const hasBg = cs.backgroundColor !== 'rgba(0, 0, 0, 0)' && cs.backgroundColor !== 'transparent';
+          const hasBgImg = cs.backgroundImage !== 'none';
+          const isFlex = cs.display === 'flex' || cs.display === 'inline-flex';
+          const isGrid = cs.display === 'grid';
+
+          if (hasBg || hasBgImg || isFlex || isGrid) {
+            VISUAL_PROPS.forEach(prop => {
+              const val = cs[prop];
+              if (val && val !== 'none' && val !== 'auto' && val !== 'normal') {
+                cloneChildren[j].style[prop] = val;
+              }
+            });
+          }
+        });
       });
 
       const htmlContent = clone.outerHTML;
 
-      // ── 4. Send to backend ──
+      // ── 5. Send to backend ──
       const response = await fetch(API_ROUTES.GENERATE_PDF, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
