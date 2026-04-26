@@ -58,7 +58,7 @@ export default function Navbar() {
     setIsExporting(true);
     const toastId = toast.loading(isAr ? 'جاري إنشاء ملف PDF عالي الجودة...' : 'Generating high-quality PDF...');
     try {
-      // ── 1. Extract ALL CSS rules as raw text (not link tags) ──
+      // ── 1. Extract ALL CSS rules as raw text ──
       let allCssText = '';
       for (const sheet of document.styleSheets) {
         try {
@@ -82,7 +82,6 @@ export default function Navbar() {
       let cssVarsBlock = '';
       if (pages.length > 0) {
         const computedStyle = getComputedStyle(pages[0]);
-        // Dynamically capture all CSS custom properties
         const allVars = [];
         for (let i = 0; i < computedStyle.length; i++) {
           const prop = computedStyle[i];
@@ -92,17 +91,18 @@ export default function Navbar() {
           }
         }
         if (allVars.length > 0) {
-          cssVarsBlock = `.a4-page-outer, .a4-page-content { ${allVars.join('; ')}; }\n`;
+          cssVarsBlock = `.a4-page-outer, .a4-page-content, [data-cv-root] { ${allVars.join('; ')}; }\n`;
         }
       }
 
       // ── 3. Clone the resume and prepare it for export ──
       const clone = resumeEl.cloneNode(true);
 
-      // Remove hidden measurement containers (position: absolute, left: -9999px)
+      // Remove hidden measurement containers
       clone.querySelectorAll('[style*="-9999"]').forEach(el => el.remove());
+      clone.querySelectorAll('[style*="visibility: hidden"]').forEach(el => el.remove());
 
-      // Inline critical computed styles on each page (background gradients, etc.)
+      // Inline critical computed styles on each page (backgrounds, gradients, etc.)
       const originalPages = resumeEl.querySelectorAll('.a4-page-outer');
       const clonedPages = clone.querySelectorAll('.a4-page-outer');
       originalPages.forEach((origPage, i) => {
@@ -113,6 +113,18 @@ export default function Navbar() {
           clonedPages[i].style.backgroundSize = cs.backgroundSize;
           clonedPages[i].style.backgroundPosition = cs.backgroundPosition;
           clonedPages[i].style.backgroundRepeat = cs.backgroundRepeat;
+
+          // Also inline sidebar/split backgrounds on inner containers
+          const innerDivs = origPage.querySelectorAll('[data-cv-root], aside, .sidebar, .sidebar-top, .sidebar-bottom, .main-content');
+          const clonedDivs = clonedPages[i].querySelectorAll('[data-cv-root], aside, .sidebar, .sidebar-top, .sidebar-bottom, .main-content');
+          innerDivs.forEach((origDiv, j) => {
+            if (clonedDivs[j]) {
+              const divCs = getComputedStyle(origDiv);
+              clonedDivs[j].style.backgroundColor = divCs.backgroundColor;
+              clonedDivs[j].style.backgroundImage = divCs.backgroundImage;
+              clonedDivs[j].style.color = divCs.color;
+            }
+          });
         }
       });
 
