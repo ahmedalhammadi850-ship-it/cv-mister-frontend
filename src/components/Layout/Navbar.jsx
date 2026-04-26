@@ -124,7 +124,11 @@ export default function Navbar() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ html: htmlContent, css: allCssText + '\n' + cssVarsBlock })
       });
-      if (!response.ok) throw new Error('Server returned ' + response.status);
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error('[PDF Export Server Error]:', errText);
+        throw new Error(`Server returned ${response.status}: ${errText}`);
+      }
       const blob = await response.blob();
       if (blob.size < 100) throw new Error('Received an empty or suspiciously small PDF payload.');
       saveAs(blob, 'CV-Mister-Export.pdf');
