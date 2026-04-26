@@ -50,111 +50,29 @@ export default function Navbar() {
   }, [darkMode]);
 
   const handleExport = async () => {
-    const resumeEl = document.querySelector('.print-container') || document.querySelector('.preview-panel');
-    if (!resumeEl) {
-      toast.error(isAr ? 'لم يتم العثور على السيرة الذاتية!' : 'Resume element not found!');
-      return;
-    }
     setIsExporting(true);
     const toastId = toast.loading(isAr ? 'جاري إنشاء ملف PDF عالي الجودة...' : 'Generating high-quality PDF...');
     try {
-      // ── 1. Extract ALL CSS rules as raw text ──
-      let allCssText = '';
-      for (const sheet of document.styleSheets) {
-        try {
-          const rules = sheet.cssRules || sheet.rules;
-          for (const rule of rules) {
-            allCssText += rule.cssText + '\n';
-          }
-        } catch (e) {
-          if (sheet.href) {
-            try {
-              const res = await fetch(sheet.href);
-              allCssText += await res.text() + '\n';
-            } catch (_) { /* skip inaccessible sheets */ }
-          }
-        }
-      }
+      // ── Pure Puppeteer approach: capture full page HTML as-is ──
+      // No cloneNode. No getComputedStyle. No CSS extraction.
+      // We send the EXACT rendered page to the server, and Puppeteer
+      // re-renders it identically and captures a pixel-perfect PDF.
+      const fullPageHtml = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
 
-      // ── 2. Capture ALL CSS custom properties from the resume container ──
-      const pages = resumeEl.querySelectorAll('.a4-page-outer');
-      let cssVarsBlock = '';
-      if (pages.length > 0) {
-        const computedStyle = getComputedStyle(pages[0]);
-        const allVars = [];
-        for (let i = 0; i < computedStyle.length; i++) {
-          const prop = computedStyle[i];
-          if (prop.startsWith('--')) {
-            const val = computedStyle.getPropertyValue(prop).trim();
-            if (val) allVars.push(`${prop}: ${val}`);
-          }
-        }
-        if (allVars.length > 0) {
-          cssVarsBlock = `:root, .a4-page-outer, .a4-page-content, [data-cv-root] { ${allVars.join('; ')}; }\n`;
-        }
-      }
-
-      // ── 3. Clone the resume ──
-      const clone = resumeEl.cloneNode(true);
-
-      // Only remove the off-screen measurement container (left: -9999px)
-      clone.querySelectorAll('[style*="-9999"]').forEach(el => el.remove());
-
-      // ── 4. SAFE INLINE: Only capture visual properties (colors, backgrounds) ──
-      // CRITICAL: We do NOT inline layout properties (width, height, display, flex)
-      // because computed values are absolute pixels that break percentage-based
-      // layouts (sidebars, splits) and multi-page pagination.
-      const originalPages = resumeEl.querySelectorAll('.a4-page-outer');
-      const clonedPages = clone.querySelectorAll('.a4-page-outer');
-
-      originalPages.forEach((origPage, i) => {
-        if (!clonedPages[i]) return;
-
-        // Capture page-level background only
-        const pageCs = getComputedStyle(origPage);
-        clonedPages[i].style.backgroundColor = pageCs.backgroundColor;
-        clonedPages[i].style.backgroundImage = pageCs.backgroundImage;
-        clonedPages[i].style.backgroundSize = pageCs.backgroundSize;
-        clonedPages[i].style.backgroundPosition = pageCs.backgroundPosition;
-        clonedPages[i].style.backgroundRepeat = pageCs.backgroundRepeat;
-
-        // Capture backgrounds on ALL child elements (safe — no layout disruption)
-        const origChildren = origPage.querySelectorAll('*');
-        const cloneChildren = clonedPages[i].querySelectorAll('*');
-
-        origChildren.forEach((origEl, j) => {
-          if (!cloneChildren[j]) return;
-          const cs = getComputedStyle(origEl);
-
-          const hasBg = cs.backgroundColor !== 'rgba(0, 0, 0, 0)' && cs.backgroundColor !== 'transparent';
-          const hasBgImg = cs.backgroundImage !== 'none';
-
-          if (hasBg) {
-            cloneChildren[j].style.backgroundColor = cs.backgroundColor;
-          }
-          if (hasBgImg) {
-            cloneChildren[j].style.backgroundImage = cs.backgroundImage;
-            cloneChildren[j].style.backgroundSize = cs.backgroundSize;
-            cloneChildren[j].style.backgroundPosition = cs.backgroundPosition;
-          }
-        });
-      });
-
-      const htmlContent = clone.outerHTML;
-
-      // ── 5. Send to backend ──
       const response = await fetch(API_ROUTES.GENERATE_PDF, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ html: htmlContent, css: allCssText + '\n' + cssVarsBlock })
+        body: JSON.stringify({ fullPageHtml }),
       });
+
       if (!response.ok) {
         const errText = await response.text();
         console.error('[PDF Export Server Error]:', errText);
         throw new Error(`Server returned ${response.status}: ${errText}`);
       }
+
       const blob = await response.blob();
-      if (blob.size < 100) throw new Error('Received an empty or suspiciously small PDF payload.');
+      if (blob.size < 500) throw new Error('PDF payload too small — likely empty.');
       saveAs(blob, 'CV-Mister-Export.pdf');
       toast.success(isAr ? 'تم تصدير الـ PDF بنجاح! 🎉' : 'PDF exported successfully! 🎉', { id: toastId });
     } catch (err) {
