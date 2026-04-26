@@ -20,7 +20,7 @@ const useStyleStore = create(
       // ── Typography (pt values for print fidelity) ──
       nameFontSize: 22,
       headingFontSize: 14,
-      bodyFontSize: 10.5,
+      bodyFontSize: 12,
       lineHeight: 1.5,
       headerAlign: 'left',
 
@@ -80,7 +80,7 @@ const useStyleStore = create(
           accentColor: '#1E3A5F',
           nameFontSize: 22,
           headingFontSize: 14,
-          bodyFontSize: 10.5,
+          bodyFontSize: 12,
           lineHeight: 1.5,
           headerAlign: 'left',
           marginTop: 7,
