@@ -63,6 +63,7 @@ const useStyleStore = create(
           '--heading-font-size': `${s.headingFontSize}pt`,
           '--body-font-size': `${s.bodyFontSize}pt`,
           '--line-height': s.lineHeight,
+          '--line-height-global': s.lineHeight,
           '--margin-top': `${s.marginTop}mm`,
           '--margin-bottom': `${s.marginBottom}mm`,
           '--margin-sides': `${s.marginSides}mm`,
