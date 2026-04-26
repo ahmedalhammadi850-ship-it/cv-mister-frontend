@@ -77,26 +77,46 @@ export default function Navbar() {
         }
       }
 
-      // ── 2. Capture CSS custom properties from the resume container ──
+      // ── 2. Capture ALL CSS custom properties from the resume container ──
       const pages = resumeEl.querySelectorAll('.a4-page-outer');
       let cssVarsBlock = '';
       if (pages.length > 0) {
         const computedStyle = getComputedStyle(pages[0]);
-        const varsToCapture = [
-          '--accent-color', '--global-font', '--name-font-size',
-          '--heading-font-size', '--body-font-size', '--line-height',
-          '--margin-top', '--margin-bottom', '--margin-sides', '--section-gap',
-          '--header-align'
-        ];
-        const vars = varsToCapture
-          .map(v => { const val = computedStyle.getPropertyValue(v).trim(); return val ? `${v}: ${val}` : null; })
-          .filter(Boolean)
-          .join('; ');
-        if (vars) cssVarsBlock = `.a4-page-outer, .a4-page-content { ${vars}; }\n`;
+        // Dynamically capture all CSS custom properties
+        const allVars = [];
+        for (let i = 0; i < computedStyle.length; i++) {
+          const prop = computedStyle[i];
+          if (prop.startsWith('--')) {
+            const val = computedStyle.getPropertyValue(prop).trim();
+            if (val) allVars.push(`${prop}: ${val}`);
+          }
+        }
+        if (allVars.length > 0) {
+          cssVarsBlock = `.a4-page-outer, .a4-page-content { ${allVars.join('; ')}; }\n`;
+        }
       }
 
-      // ── 3. Get the full outer HTML of resume pages ──
-      const htmlContent = resumeEl.outerHTML;
+      // ── 3. Clone the resume and prepare it for export ──
+      const clone = resumeEl.cloneNode(true);
+
+      // Remove hidden measurement containers (position: absolute, left: -9999px)
+      clone.querySelectorAll('[style*="-9999"]').forEach(el => el.remove());
+
+      // Inline critical computed styles on each page (background gradients, etc.)
+      const originalPages = resumeEl.querySelectorAll('.a4-page-outer');
+      const clonedPages = clone.querySelectorAll('.a4-page-outer');
+      originalPages.forEach((origPage, i) => {
+        if (clonedPages[i]) {
+          const cs = getComputedStyle(origPage);
+          clonedPages[i].style.backgroundColor = cs.backgroundColor;
+          clonedPages[i].style.backgroundImage = cs.backgroundImage;
+          clonedPages[i].style.backgroundSize = cs.backgroundSize;
+          clonedPages[i].style.backgroundPosition = cs.backgroundPosition;
+          clonedPages[i].style.backgroundRepeat = cs.backgroundRepeat;
+        }
+      });
+
+      const htmlContent = clone.outerHTML;
 
       // ── 4. Send to backend ──
       const response = await fetch(API_ROUTES.GENERATE_PDF, {
