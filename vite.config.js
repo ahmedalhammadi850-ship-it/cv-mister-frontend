@@ -10,10 +10,10 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/api': 'http://localhost:3001',
-      '/generate-pdf': 'http://localhost:3001',
+      '/api': 'https://cv-mister-backend.onrender.com',
+      '/generate-pdf': 'https://cv-mister-backend.onrender.com',
       '/socket.io': {
-        target: 'http://localhost:3001',
+        target: 'https://cv-mister-backend.onrender.com',
         ws: true,
       },
       '/n8n': {
