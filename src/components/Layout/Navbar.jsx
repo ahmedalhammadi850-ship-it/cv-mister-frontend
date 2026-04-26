@@ -100,35 +100,25 @@ export default function Navbar() {
       // Only remove the off-screen measurement container (left: -9999px)
       clone.querySelectorAll('[style*="-9999"]').forEach(el => el.remove());
 
-      // ── 4. DEEP INLINE: Capture computed visual styles on EVERY element ──
-      // This is the key to mirror-image export — we bake all computed
-      // visual properties directly into inline styles so nothing is lost.
-      const VISUAL_PROPS = [
-        'backgroundColor', 'backgroundImage', 'backgroundSize',
-        'backgroundPosition', 'backgroundRepeat', 'background',
-        'color', 'display', 'flexDirection', 'flexWrap', 'flex',
-        'justifyContent', 'alignItems', 'gap', 'columnGap', 'rowGap',
-        'width', 'minWidth', 'maxWidth', 'height', 'minHeight',
-        'borderLeft', 'borderRight', 'borderTop', 'borderBottom',
-        'borderRadius', 'opacity', 'order',
-      ];
-
+      // ── 4. SAFE INLINE: Only capture visual properties (colors, backgrounds) ──
+      // CRITICAL: We do NOT inline layout properties (width, height, display, flex)
+      // because computed values are absolute pixels that break percentage-based
+      // layouts (sidebars, splits) and multi-page pagination.
       const originalPages = resumeEl.querySelectorAll('.a4-page-outer');
       const clonedPages = clone.querySelectorAll('.a4-page-outer');
 
       originalPages.forEach((origPage, i) => {
         if (!clonedPages[i]) return;
 
-        // Inline the page-level background
+        // Capture page-level background only
         const pageCs = getComputedStyle(origPage);
-        VISUAL_PROPS.forEach(prop => {
-          const val = pageCs[prop];
-          if (val && val !== 'none' && val !== 'auto' && val !== 'normal' && val !== '0px') {
-            clonedPages[i].style[prop] = val;
-          }
-        });
+        clonedPages[i].style.backgroundColor = pageCs.backgroundColor;
+        clonedPages[i].style.backgroundImage = pageCs.backgroundImage;
+        clonedPages[i].style.backgroundSize = pageCs.backgroundSize;
+        clonedPages[i].style.backgroundPosition = pageCs.backgroundPosition;
+        clonedPages[i].style.backgroundRepeat = pageCs.backgroundRepeat;
 
-        // Deep-inline all child elements with visual significance
+        // Capture backgrounds on ALL child elements (safe — no layout disruption)
         const origChildren = origPage.querySelectorAll('*');
         const cloneChildren = clonedPages[i].querySelectorAll('*');
 
@@ -136,19 +126,16 @@ export default function Navbar() {
           if (!cloneChildren[j]) return;
           const cs = getComputedStyle(origEl);
 
-          // Only inline if element has a visible background or is a layout container
           const hasBg = cs.backgroundColor !== 'rgba(0, 0, 0, 0)' && cs.backgroundColor !== 'transparent';
           const hasBgImg = cs.backgroundImage !== 'none';
-          const isFlex = cs.display === 'flex' || cs.display === 'inline-flex';
-          const isGrid = cs.display === 'grid';
 
-          if (hasBg || hasBgImg || isFlex || isGrid) {
-            VISUAL_PROPS.forEach(prop => {
-              const val = cs[prop];
-              if (val && val !== 'none' && val !== 'auto' && val !== 'normal') {
-                cloneChildren[j].style[prop] = val;
-              }
-            });
+          if (hasBg) {
+            cloneChildren[j].style.backgroundColor = cs.backgroundColor;
+          }
+          if (hasBgImg) {
+            cloneChildren[j].style.backgroundImage = cs.backgroundImage;
+            cloneChildren[j].style.backgroundSize = cs.backgroundSize;
+            cloneChildren[j].style.backgroundPosition = cs.backgroundPosition;
           }
         });
       });
