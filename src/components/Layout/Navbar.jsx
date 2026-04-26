@@ -56,21 +56,59 @@ export default function Navbar() {
       return;
     }
     setIsExporting(true);
-    const toastId = toast.loading(isAr ? 'جاري إنشاء ملف PDF...' : 'Generating PDF...');
+    const toastId = toast.loading(isAr ? 'جاري إنشاء ملف PDF عالي الجودة...' : 'Generating high-quality PDF...');
     try {
-      const htmlContent = resumeEl.innerHTML;
-      const styleSheets = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'));
-      const cssContent = styleSheets.map(el => el.outerHTML).join('\n');
+      // ── 1. Extract ALL CSS rules as raw text (not link tags) ──
+      let allCssText = '';
+      for (const sheet of document.styleSheets) {
+        try {
+          const rules = sheet.cssRules || sheet.rules;
+          for (const rule of rules) {
+            allCssText += rule.cssText + '\n';
+          }
+        } catch (e) {
+          // Cross-origin stylesheets can't be read — fetch them instead
+          if (sheet.href) {
+            try {
+              const res = await fetch(sheet.href);
+              allCssText += await res.text() + '\n';
+            } catch (_) { /* skip inaccessible sheets */ }
+          }
+        }
+      }
+
+      // ── 2. Capture CSS custom properties from the resume container ──
+      const pages = resumeEl.querySelectorAll('.a4-page-outer');
+      let cssVarsBlock = '';
+      if (pages.length > 0) {
+        const computedStyle = getComputedStyle(pages[0]);
+        const varsToCapture = [
+          '--accent-color', '--global-font', '--name-font-size',
+          '--heading-font-size', '--body-font-size', '--line-height',
+          '--margin-top', '--margin-bottom', '--margin-sides', '--section-gap',
+          '--header-align'
+        ];
+        const vars = varsToCapture
+          .map(v => { const val = computedStyle.getPropertyValue(v).trim(); return val ? `${v}: ${val}` : null; })
+          .filter(Boolean)
+          .join('; ');
+        if (vars) cssVarsBlock = `.a4-page-outer, .a4-page-content { ${vars}; }\n`;
+      }
+
+      // ── 3. Get the full outer HTML of resume pages ──
+      const htmlContent = resumeEl.outerHTML;
+
+      // ── 4. Send to backend ──
       const response = await fetch(API_ROUTES.GENERATE_PDF, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ html: htmlContent, css: cssContent })
+        body: JSON.stringify({ html: htmlContent, css: allCssText + '\n' + cssVarsBlock })
       });
       if (!response.ok) throw new Error('Server returned ' + response.status);
       const blob = await response.blob();
       if (blob.size < 100) throw new Error('Received an empty or suspiciously small PDF payload.');
       saveAs(blob, 'CV-Mister-Export.pdf');
-      toast.success(isAr ? 'تم تصدير الـ PDF بنجاح!' : 'PDF exported successfully!', { id: toastId });
+      toast.success(isAr ? 'تم تصدير الـ PDF بنجاح! 🎉' : 'PDF exported successfully! 🎉', { id: toastId });
     } catch (err) {
       console.error('[PDF Export Error]', err);
       toast.error(isAr ? 'خطأ أثناء الاتصال بالخادم' : 'Error connecting to server', { id: toastId });
