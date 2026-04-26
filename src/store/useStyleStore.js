@@ -57,7 +57,7 @@ const useStyleStore = create(
       getCssVars: () => {
         const s = get();
         return {
-          '--global-font': s.language === 'ar' ? "'Readex Pro', sans-serif" : "'Inter', sans-serif",
+          '--global-font': "'Roboto', 'Arial', sans-serif",
           '--accent-color': s.accentColor,
           '--name-font-size': `${s.nameFontSize}pt`,
           '--heading-font-size': `${s.headingFontSize}pt`,
