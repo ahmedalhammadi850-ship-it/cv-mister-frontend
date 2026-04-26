@@ -72,8 +72,9 @@ export default function ModernSidebarTemplate({
   return (
     <div data-cv-root style={{ 
       direction: language === 'ar' ? 'rtl' : 'ltr', width: '100%',
-      minHeight: '297mm',
-      background: 'linear-gradient(to right, #1e293b 32%, #FFFFFF 32%)',
+      minHeight: '100%',
+      flex: 1,
+      background: `linear-gradient(${language === 'ar' ? 'to left' : 'to right'}, #1e293b 32%, #FFFFFF 32%)`,
       display: 'flex',
       flexDirection: isRtl ? 'row-reverse' : 'row'
     }}>

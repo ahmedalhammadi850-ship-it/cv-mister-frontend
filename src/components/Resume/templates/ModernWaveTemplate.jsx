@@ -37,6 +37,7 @@ export default function ModernWaveTemplate({
     <div data-cv-root style={{ 
       direction: language === 'ar' ? 'rtl' : 'ltr', fontFamily: 'var(--global-font)', 
       minHeight: '100%', 
+      flex: 1,
       display: 'flex',
       flexDirection: 'row',
       backgroundColor: '#FFFFFF',

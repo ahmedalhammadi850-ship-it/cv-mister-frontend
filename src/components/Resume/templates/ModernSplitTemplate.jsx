@@ -81,8 +81,9 @@ export default function ModernSplitTemplate({
   return (
     <div data-cv-root style={{ 
       width: '100%',
-      minHeight: '297mm',
-      background: 'linear-gradient(to right, #fff 40%, #f8fafc 40%)',
+      minHeight: '100%',
+      flex: 1,
+      background: `linear-gradient(${isRtl ? 'to left' : 'to right'}, #fff 40%, #f8fafc 40%)`,
       display: 'flex',
       flexDirection: isRtl ? 'row-reverse' : 'row',
       direction: isRtl ? 'rtl' : 'ltr'
