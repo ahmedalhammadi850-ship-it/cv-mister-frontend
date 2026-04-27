@@ -194,9 +194,9 @@ const useResumeStore = create(
       resetData: () => set({ data: { ...initialResumeData }, saveStatus: 'unsaved', resumeId: null }),
 
       // ── Backend Sync ───────────────────────────────
-      saveToBackend: async () => {
+      saveToBackend: async (providedStyleState = null) => {
         const state = get();
-        const styleState = useStyleStore.getState();
+        const styleState = providedStyleState || useStyleStore.getState();
         set({ saveStatus: 'saving' });
 
         try {

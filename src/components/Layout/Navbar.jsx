@@ -54,7 +54,8 @@ export default function Navbar() {
     const toastId = toast.loading(isAr ? 'جاري تصدير ملف PDF عالي الجودة...' : 'Generating high-quality PDF...');
     try {
       // 1. Force Save to Backend to ensure metadata is updated
-      await useResumeStore.getState().saveToBackend();
+      const styleState = useStyleStore.getState();
+      await useResumeStore.getState().saveToBackend(styleState);
 
       // 2. Capture the actual HTML from the preview
       const previewElement = document.getElementById('resume-preview-root');
