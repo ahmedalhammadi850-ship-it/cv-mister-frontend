@@ -6,6 +6,7 @@ import React from 'react';
 import { renderSection, ContactInfo } from '../Sections';
 import { CATEGORIES } from '../../../utils/constants';
 import useResumeStore from '../../../store/useResumeStore';
+import useStyleStore from '../../../store/useStyleStore';
 import SectionDraggable from '../SectionDraggable';
 
 export default function SubtleBarTemplate({
@@ -18,10 +19,12 @@ export default function SubtleBarTemplate({
   pageId = 'preview'
 }) {
   const { layoutColumns, alignments = {} } = useResumeStore();
+  const { headerAlign: storeHeaderAlign } = useStyleStore();
   const IsDnd = pageId === 'main-canvas' || pageId === 'preview-canvas';
   const isRtl = language === 'ar';
-  const nameAlign = alignments['full_name'] || data.settings?.header_align || 'center';
-  const infoAlign = alignments['personal_info'] || data.settings?.header_align || 'center';
+  const globalAlign = storeHeaderAlign || data.settings?.header_align || 'center';
+  const nameAlign = alignments['full_name'] || globalAlign;
+  const infoAlign = alignments['personal_info'] || globalAlign;
   
   // Single Column: merge everything
   const allPossibleKeys = [
@@ -44,7 +47,7 @@ export default function SubtleBarTemplate({
     textSize: s.text_size ? `${s.text_size}pt` : '9pt',
     lineHeight: parseFloat(s.line_height || 1.6),
     sectionSpacing: `${s.section_spacing || 32}px`,
-    headerAlign: s.header_align || 'center'
+    headerAlign: storeHeaderAlign || s.header_align || 'center'
   };
 
   const headingStyle = {
@@ -68,18 +71,21 @@ export default function SubtleBarTemplate({
            --dynamic-header-size: ${data.settings?.header_size || 13.5}pt;
            --line-height: ${data.settings?.line_height || 1.6};
            --section-spacing: ${data.settings?.section_spacing || 32}px;
-           --header-align: ${data.settings?.header_align || 'center'};
+           --header-align: ${config.headerAlign};
         }
 
         .section-title, [data-section] > h2, [data-section] > h3 {
            font-size: var(--dynamic-header-size) !important;
-           text-align: var(--header-align) !important;
            width: 100% !important;
            display: block !important;
         }
 
         [data-cv-root] * {
            line-height: var(--line-height) !important;
+        }
+
+        .subtle-heading-bar {
+           text-align: var(--header-align) !important;
         }
       `}</style>
 
@@ -104,8 +110,8 @@ export default function SubtleBarTemplate({
           {filteredSections.map((key, index) => {
              const content = (
                <div key={key} data-section data-section-key={key} style={{ marginBottom: 'var(--section-spacing)' }}>
-                 <div style={{
-                   backgroundColor: '#F1F5F9', // Light Slate Gray
+                 <div className="subtle-heading-bar" style={{
+                   backgroundColor: '#F1F5F9',
                    color: '#1E293B',
                    padding: '10px 16px',
                    borderRadius: '2px',
@@ -115,7 +121,6 @@ export default function SubtleBarTemplate({
                    letterSpacing: '0.05em',
                    display: 'block',
                    width: '100%',
-                   textAlign: alignments[key] || config.headerAlign || 'start',
                    marginBottom: '14px',
                    lineHeight: 1.2,
                    borderInlineStart: `4px solid ${accentColor}`
