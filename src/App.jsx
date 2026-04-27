@@ -23,6 +23,7 @@ import CoverLetterBuilder from './pages/CoverLetterBuilder';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminLogin from './pages/AdminLogin';
 import Contact from './pages/Contact';
+import PrintPage from './pages/PrintPage';
 
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
@@ -42,7 +43,8 @@ function AppContent() {
   const darkMode = useThemeStore((s) => s.darkMode);
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
-  const isAppRoute = location.pathname.startsWith('/builder') || location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/admin');
+  const isPrintRoute = location.pathname.startsWith('/cv-print');
+  const isAppRoute = location.pathname.startsWith('/builder') || location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/admin') || isPrintRoute;
 
   // ── Global Real-time Sync for User Plan ──────────────────────
   const userId = user?._id || user?.id || user?.firebaseUID;
@@ -126,9 +128,9 @@ function AppContent() {
         fontFamily: language === 'ar' ? "'Readex Pro', sans-serif" : "'Inter', sans-serif",
       }}
     >
-      {!isAdminRoute && <Navbar />}
+      {!isAdminRoute && !isPrintRoute && <Navbar />}
       
-      <main style={{ paddingTop: isAdminRoute ? '0px' : '72px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <main style={{ paddingTop: isAdminRoute || isPrintRoute ? '0px' : '72px', flex: 1, display: 'flex', flexDirection: 'column' }}>
         <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Landing />} />
@@ -157,13 +159,16 @@ function AppContent() {
               <ProtectedAdminRoute><AdminDashboard /></ProtectedAdminRoute>
             } />
 
+            {/* Print Route */}
+            <Route path="/cv-print" element={<PrintPage />} />
+
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </main>
 
         {!isAppRoute && <Footer />}
-        <ChatWidget />
+        {!isPrintRoute && <ChatWidget />}
       </div>
   );
 }

@@ -123,8 +123,8 @@ export default function A4PageWrapper({ deferredData }) {
     } else if (template === 'modern_wave') {
       fullBleedSidebar = {
         width: language === 'ar' ? `calc(32% + var(--margin-sides, 15px))` : `calc(32% + var(--margin-sides, 15px))`, 
-        colorStart: accentColor, 
-        colorEnd: accentColor,
+        colorStart: '#f8fafc', 
+        colorEnd: '#f8fafc',
         position: 'right'
       };
     }

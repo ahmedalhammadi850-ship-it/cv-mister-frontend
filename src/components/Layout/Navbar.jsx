@@ -53,120 +53,15 @@ export default function Navbar() {
     setIsExporting(true);
     const toastId = toast.loading(isAr ? 'جاري إنشاء ملف PDF عالي الجودة...' : 'Generating high-quality PDF...');
     try {
-      // ── MIRROR-IMAGE EXPORT v5.0 ──
-      // Extract ONLY the visible A4 pages from the preview panel.
-      // This guarantees the PDF is an EXACT copy of what the user sees.
+      // الحصول على ID السيرة الذاتية من مسار الصفحة الحالي (مثل: /builder/123)
+      const cvId = location.pathname.split('/').pop();
 
-      // 1. Find the print-container (holds both measuring div + visible pages)
-      const printContainer = document.querySelector('.preview-panel .print-container')
-                          || document.querySelector('.print-container');
-      if (!printContainer) throw new Error('Resume preview not found on page.');
-
-      // 2. Clone ONLY the visible .a4-page-outer elements (skip hidden measuring div)
-      const visiblePages = printContainer.querySelectorAll('.a4-page-outer');
-      if (!visiblePages.length) throw new Error('No resume pages found.');
-
-      const pagesHtml = Array.from(visiblePages).map(page => {
-        const clone = page.cloneNode(true);
-        // Remove any box-shadow / border for clean PDF
-        clone.style.boxShadow = 'none';
-        clone.style.border = 'none';
-        clone.style.marginBottom = '0';
-        return clone.outerHTML;
-      }).join('\n');
-
-      // 3. Gather ALL stylesheets (links + inline <style> tags)
-      const styleSheets = [];
-      document.querySelectorAll('link[rel="stylesheet"]').forEach(link => {
-        styleSheets.push(`<link rel="stylesheet" href="${link.href}" />`);
-      });
-      document.querySelectorAll('style').forEach(style => {
-        styleSheets.push(`<style>${style.innerHTML}</style>`);
-      });
-
-      // 4. Get CSS custom properties from the builder (--margin-top, --accent-color, etc.)
-      const builderLayout = document.querySelector('.builder-layout');
-      const cssVarsStr = builderLayout ? builderLayout.getAttribute('style') || '' : '';
-
-      // 5. Get the current font from computed style
-      const computedFont = getComputedStyle(document.documentElement).getPropertyValue('--global-font') || "'Inter', 'Cairo', sans-serif";
-
-      // 6. Build a clean, self-contained HTML document
-      const fullPageHtml = `<!DOCTYPE html>
-<html lang="${isAr ? 'ar' : 'en'}" dir="${isAr ? 'rtl' : 'ltr'}">
-<head>
-  <meta charset="UTF-8">
-  <base href="${window.location.origin}/">
-  <meta name="viewport" content="width=794">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  ${styleSheets.join('\n')}
-  <style>
-    /* Reset for clean PDF rendering */
-    *, *::before, *::after {
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-      color-adjust: exact !important;
-    }
-    html, body {
-      margin: 0 !important;
-      padding: 0 !important;
-      width: 794px !important;
-      background: #ffffff !important;
-      font-family: ${computedFont} !important;
-      text-rendering: optimizeLegibility !important;
-      -webkit-font-smoothing: antialiased !important;
-    }
-    body {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    /* Hide ALL UI elements that should not appear in PDF */
-    .nav-bar, .navbar, .form-panel, .sidebar, .builder-tabs-container,
-    .category-grid, .no-print, .save-indicator, .template-grid,
-    .btn-primary, .btn-secondary, .btn-premium, .toasts,
-    [class*="Toaster"], [class*="chat-widget"], [class*="tidio"] {
-      display: none !important;
-    }
-    /* A4 Page styling */
-    .a4-page-outer {
-      width: 210mm !important;
-      height: 297mm !important;
-      min-height: 297mm !important;
-      max-height: 297mm !important;
-      overflow: hidden !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      box-shadow: none !important;
-      border: none !important;
-      position: relative !important;
-      background: #ffffff !important;
-      page-break-after: always !important;
-      break-after: page !important;
-    }
-    .a4-page-outer:last-child {
-      page-break-after: auto !important;
-      break-after: auto !important;
-    }
-    @page {
-      size: 210mm 297mm;
-      margin: 0;
-    }
-  </style>
-</head>
-<body style="${cssVarsStr}">
-  <div class="print-container" style="display:flex;flex-direction:column;align-items:center;width:100%;">
-    ${pagesHtml}
-  </div>
-</body>
-</html>`;
-
-      // 7. Send to backend for Puppeteer rendering
       const response = await fetch(API_ROUTES.GENERATE_PDF, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fullPageHtml }),
+        body: JSON.stringify({ 
+          url: `${window.location.origin}/cv-print?id=${cvId}` 
+        }),
       });
 
       if (!response.ok) {
@@ -177,7 +72,7 @@ export default function Navbar() {
 
       const blob = await response.blob();
       if (blob.size < 500) throw new Error('PDF payload too small — likely empty.');
-      saveAs(blob, 'CV-Mister-Export.pdf');
+      saveAs(blob, 'My-Resume.pdf');
       toast.success(isAr ? 'تم تصدير الـ PDF بنجاح! 🎉' : 'PDF exported successfully! 🎉', { id: toastId });
     } catch (err) {
       console.error('[PDF Export Error]', err);
