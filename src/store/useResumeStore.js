@@ -7,6 +7,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { initialResumeData } from '../utils/initialData';
 import useAuthStore from './useAuthStore';
+import useStyleStore from './useStyleStore';
 import { API_ROUTES } from '../api/config';
 
 const useResumeStore = create(
