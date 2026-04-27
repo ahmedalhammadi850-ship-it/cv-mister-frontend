@@ -53,8 +53,9 @@ export default function Navbar() {
     setIsExporting(true);
     const toastId = toast.loading(isAr ? 'جاري إنشاء ملف PDF عالي الجودة...' : 'Generating high-quality PDF...');
     try {
-      // الحصول على ID السيرة الذاتية من مسار الصفحة الحالي (مثل: /builder/123)
-      const cvId = location.pathname.split('/').pop();
+      // الحصول على ID السيرة الذاتية من الرابط (Query Params أو Path)
+      const params = new URLSearchParams(window.location.search);
+      let cvId = params.get('id') || location.pathname.split('/').pop();
 
       const response = await fetch(API_ROUTES.GENERATE_PDF, {
         method: 'POST',
