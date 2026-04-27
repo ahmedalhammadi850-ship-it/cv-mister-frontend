@@ -20,20 +20,27 @@ export default function ProtectedRoute({ children }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        // User is signed in with Firebase — verify their email status
-        if (firebaseUser.emailVerified) {
-          // Ensure our Zustand store reflects the verified state
+        // User is signed in with Firebase — auto-refresh token & verify email
+        try {
+          const freshToken = await firebaseUser.getIdToken(true);
           const currentUser = useAuthStore.getState().user;
-          if (currentUser && !currentUser.emailVerified) {
+          
+          // Update token in store to keep it fresh
+          useAuthStore.setState({ token: freshToken });
+          
+          if (firebaseUser.emailVerified && currentUser && !currentUser.emailVerified) {
             useAuthStore.setState((state) => ({
               user: { ...state.user, emailVerified: true }
             }));
           }
+          console.log('[ProtectedRoute] ✅ Firebase session valid, token refreshed.');
+        } catch (err) {
+          console.warn('[ProtectedRoute] Token refresh failed:', err.message);
         }
       } else {
-        // No Firebase user — clear local state if stale
+        // No Firebase user — only logout if we have a stale token
         if (useAuthStore.getState().token) {
-          console.log('[ProtectedRoute] Firebase session lost, logging out.');
+          console.log('[ProtectedRoute] Firebase session ended, logging out.');
           useAuthStore.getState().logout();
         }
       }
