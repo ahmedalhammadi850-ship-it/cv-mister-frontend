@@ -115,7 +115,7 @@ export default function SubtleBarTemplate({
                    letterSpacing: '0.05em',
                    display: 'block',
                    width: '100%',
-                   textAlign: 'start',
+                   textAlign: alignments[key] || config.headerAlign || 'start',
                    marginBottom: '14px',
                    lineHeight: 1.2,
                    borderInlineStart: `4px solid ${accentColor}`
