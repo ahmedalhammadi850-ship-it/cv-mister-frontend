@@ -7,8 +7,16 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { initialResumeData } from '../utils/initialData';
 import useAuthStore from './useAuthStore';
-import useStyleStore from './useStyleStore';
 import { API_ROUTES } from '../api/config';
+
+// ── Async helper to break circular dependency ────────────
+// useStyleStore MUST NOT be imported statically here.
+// Vite's bundler may initialize this module before useStyleStore,
+// causing a ReferenceError. We use dynamic import() instead.
+const getStyleStore = async () => {
+  const mod = await import('./useStyleStore.js');
+  return mod.default;
+};
 
 const useResumeStore = create(
   persist(
@@ -196,7 +204,11 @@ const useResumeStore = create(
       // ── Backend Sync ───────────────────────────────
       saveToBackend: async (providedStyleState = null) => {
         const state = get();
-        const styleState = providedStyleState || useStyleStore.getState();
+        let styleState = providedStyleState;
+        if (!styleState) {
+          const useStyleStore = await getStyleStore();
+          styleState = useStyleStore.getState();
+        }
         set({ saveStatus: 'saving' });
 
         try {
@@ -285,23 +297,28 @@ const useResumeStore = create(
           const metadata = result.metadata || {};
           const styleConfig = result.styleConfig || {};
           
-          // Sync Style Store
-          useStyleStore.setState({
-            template: result.templateId || 'professional',
-            category: result.category || 'chronological',
-            language: result.language || 'en',
-            accentColor: styleConfig.accentColor || '#1E3A5F',
-            nameFontSize: styleConfig.nameFontSize || 22,
-            headingFontSize: styleConfig.headingFontSize || 14,
-            bodyFontSize: styleConfig.bodyFontSize || 12,
-            lineHeight: styleConfig.lineHeight || 1.5,
-            headerAlign: styleConfig.headerAlign || 'left',
-            marginTop: styleConfig.marginTop || 7,
-            marginBottom: styleConfig.marginBottom || 20,
-            marginSides: styleConfig.marginSides || 6,
-            sectionGap: styleConfig.sectionGap || 16,
-            columnFlowEnabled: styleConfig.columnFlowEnabled || false,
-          });
+          // Sync Style Store (async resolve to avoid circular dep)
+          try {
+            const useStyleStore = await getStyleStore();
+            useStyleStore.setState({
+              template: result.templateId || 'professional',
+              category: result.category || 'chronological',
+              language: result.language || 'en',
+              accentColor: styleConfig.accentColor || '#1E3A5F',
+              nameFontSize: styleConfig.nameFontSize || 22,
+              headingFontSize: styleConfig.headingFontSize || 14,
+              bodyFontSize: styleConfig.bodyFontSize || 12,
+              lineHeight: styleConfig.lineHeight || 1.5,
+              headerAlign: styleConfig.headerAlign || 'left',
+              marginTop: styleConfig.marginTop || 7,
+              marginBottom: styleConfig.marginBottom || 20,
+              marginSides: styleConfig.marginSides || 6,
+              sectionGap: styleConfig.sectionGap || 16,
+              columnFlowEnabled: styleConfig.columnFlowEnabled || false,
+            });
+          } catch (e) {
+            console.warn('[loadFromBackend] Could not sync style store:', e.message);
+          }
 
           // Deep safety merge with initial data
           const loadedData = result.content || result.data || {};
