@@ -51,36 +51,39 @@ export default function Navbar() {
 
   const handleExport = async () => {
     setIsExporting(true);
-    const toastId = toast.loading(isAr ? 'جاري حفظ التعديلات وتجهيز الملف...' : 'Saving changes and preparing PDF...');
+    const toastId = toast.loading(isAr ? 'جاري تصدير ملف PDF عالي الجودة...' : 'Generating high-quality PDF...');
     try {
-      // 1. Force Save to Backend to ensure Puppeteer sees the latest style/content
+      // 1. Force Save to Backend to ensure metadata is updated
       await useResumeStore.getState().saveToBackend();
 
-      // الحصول على ID السيرة الذاتية من الرابط (Query Params أو Path)
-      const params = new URLSearchParams(window.location.search);
-      let cvId = params.get('id') || location.pathname.split('/').pop();
+      // 2. Capture the actual HTML from the preview
+      const previewElement = document.getElementById('resume-preview-root');
+      if (!previewElement) throw new Error('Preview element not found');
+
+      // Clone and clean up
+      const clone = previewElement.cloneNode(true);
+      clone.querySelectorAll('.no-print').forEach(el => el.remove());
+
+      // Prepare the full HTML package
+      const resumeHtml = clone.innerHTML;
 
       const response = await fetch(API_ROUTES.GENERATE_PDF, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          url: `${window.location.origin}/cv-print?id=${cvId}` 
-        }),
+        body: JSON.stringify({ html: resumeHtml }),
       });
 
       if (!response.ok) {
         const errText = await response.text();
-        console.error('[PDF Export Server Error]:', errText);
         throw new Error(`Server returned ${response.status}: ${errText}`);
       }
 
       const blob = await response.blob();
-      if (blob.size < 500) throw new Error('PDF payload too small — likely empty.');
-      saveAs(blob, 'My-Resume.pdf');
-      toast.success(isAr ? 'تم تصدير الـ PDF بنجاح! 🎉' : 'PDF exported successfully! 🎉', { id: toastId });
+      saveAs(blob, `Resume-${Date.now()}.pdf`);
+      toast.success(isAr ? 'تم التصدير بنجاح!' : 'Exported successfully!', { id: toastId });
     } catch (err) {
       console.error('[PDF Export Error]', err);
-      toast.error(isAr ? 'خطأ أثناء الاتصال بالخادم' : 'Error connecting to server', { id: toastId });
+      toast.error(isAr ? 'فشل تصدير الملف' : 'Export failed', { id: toastId });
     } finally {
       setIsExporting(false);
     }

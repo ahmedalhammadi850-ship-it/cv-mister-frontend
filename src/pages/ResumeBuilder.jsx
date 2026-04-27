@@ -104,7 +104,7 @@ export default function ResumeBuilder() {
       </div>
 
       {/* Right Panel: Live Preview */}
-      <div className="preview-panel">
+      <div className="preview-panel" id="resume-preview-root">
         <ErrorBoundary>
           <A4PageWrapper deferredData={deferredData} />
         </ErrorBoundary>
