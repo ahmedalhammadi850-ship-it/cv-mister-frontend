@@ -51,8 +51,11 @@ export default function Navbar() {
 
   const handleExport = async () => {
     setIsExporting(true);
-    const toastId = toast.loading(isAr ? 'جاري إنشاء ملف PDF عالي الجودة...' : 'Generating high-quality PDF...');
+    const toastId = toast.loading(isAr ? 'جاري حفظ التعديلات وتجهيز الملف...' : 'Saving changes and preparing PDF...');
     try {
+      // 1. Force Save to Backend to ensure Puppeteer sees the latest style/content
+      await useResumeStore.getState().saveToBackend();
+
       // الحصول على ID السيرة الذاتية من الرابط (Query Params أو Path)
       const params = new URLSearchParams(window.location.search);
       let cvId = params.get('id') || location.pathname.split('/').pop();

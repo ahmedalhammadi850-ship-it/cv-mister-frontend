@@ -103,10 +103,17 @@ export default function ResumeRenderer({
         .resume-heading,
         .section-header,
         [data-section] > h2, 
-        [data-section] > h3 { 
+        [data-section] > h3,
+        .professional-template h2,
+        .modern-sidebar-template h2 { 
            text-align: ${headerAlign} !important; 
            width: 100% !important;
            display: block !important;
+        }
+
+        /* Force children to respect parent alignment if they are flex containers */
+        .resume-section {
+          width: 100% !important;
         }
 
         /* منع توريث المحاذاة للنصوص الداخلية — يستخدم start لدعم RTL/LTR */

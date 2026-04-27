@@ -64,8 +64,9 @@ export default function PrintPage() {
           });
 
           setLoading(false);
-          // تأخير بسيط للتأكد من أن React أنهى الرسم بالكامل
-          setTimeout(() => setDataReady(true), 500);
+          setLoading(false);
+          // تأخير بسيط للتأكد من أن React أنهى الرسم بالكامل وتحميل الخطوط
+          setTimeout(() => setDataReady(true), 1000);
         })
         .catch(err => {
           console.error('Error loading public resume:', err);
