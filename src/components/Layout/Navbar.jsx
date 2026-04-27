@@ -65,9 +65,61 @@ export default function Navbar() {
       const clone = previewElement.cloneNode(true);
       clone.querySelectorAll('.no-print').forEach(el => el.remove());
 
-      // Prepare the full HTML package
-      const resumeHtml = clone.innerHTML;
+      // Get CSS variables to inject them into the HTML wrapper
+      const cssVars = styleState.getCssVars();
+      const cssVarsString = Object.entries(cssVars)
+        .map(([k, v]) => `${k}: ${v};`)
+        .join(' ');
 
+      // Collect all internal stylesheets to ensure templates and layout styles are included
+      let allStyles = '';
+      try {
+        for (let sheet of document.styleSheets) {
+          try {
+            for (let rule of sheet.cssRules) {
+              allStyles += rule.cssText + '\n';
+            }
+          } catch(e) {
+            // Ignore CORS issues for external sheets
+          }
+        }
+      } catch (e) {
+        console.warn('Could not extract all styles', e);
+      }
+
+      // Prepare the full HTML package with exact CSS and Fonts
+      const resumeHtml = `
+<!DOCTYPE html>
+<html lang="${language}" dir="${isAr ? 'rtl' : 'ltr'}">
+<head>
+  <meta charset="UTF-8">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Cairo:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      ${cssVarsString}
+    }
+    ${allStyles}
+    
+    /* Print optimizations to ensure exact match */
+    body {
+      margin: 0;
+      padding: 0;
+      background: white !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .a4-page-wrapper {
+      box-shadow: none !important;
+      margin: 0 !important;
+      border: none !important;
+    }
+  </style>
+</head>
+<body>
+  ${clone.innerHTML}
+</body>
+</html>
+      `;
       const response = await fetch(API_ROUTES.GENERATE_PDF, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
