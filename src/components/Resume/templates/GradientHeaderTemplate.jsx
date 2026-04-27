@@ -160,7 +160,7 @@ export default function GradientHeaderTemplate({
         <header style={{ 
           display: 'flex', 
           justifyContent: 'space-between',
-          flexDirection: isRtl ? 'row-reverse' : 'row',
+          flexDirection: 'row',
           padding: '40px 50px',
           position: 'relative',
           zIndex: 5
@@ -171,8 +171,8 @@ export default function GradientHeaderTemplate({
             padding: '25px 30px',
             borderStartStartRadius: '0',
             borderStartEndRadius: '0',
-            borderEndEndRadius: '0',
-            borderEndStartRadius: '40px',
+            borderEndEndRadius: '40px',
+            borderEndStartRadius: '0',
             boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
             minWidth: '220px',
             marginTop: '-40px',
@@ -187,7 +187,7 @@ export default function GradientHeaderTemplate({
              display: 'flex', 
              alignItems: nameAlign === 'center' ? 'center' : 'flex-start', 
              gap: '25px',
-             flexDirection: nameAlign === 'center' ? 'column' : (isRtl ? 'row-reverse' : 'row'),
+             flexDirection: nameAlign === 'center' ? 'column' : 'row',
              textAlign: nameAlign
           }}>
              <div>
@@ -221,7 +221,7 @@ export default function GradientHeaderTemplate({
         gap: '40px',
         position: 'relative',
         zIndex: 5,
-        flexDirection: isRtl ? 'row-reverse' : 'row'
+        flexDirection: 'row'
       }}>
         <div style={{ width: '35%' }}>
           {filteredSide.map((key, index) => {
