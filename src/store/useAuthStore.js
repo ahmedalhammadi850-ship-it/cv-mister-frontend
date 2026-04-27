@@ -27,7 +27,7 @@ const useAuthStore = create(
           const firebaseUser = userCredential.user;
 
           // Mandatory Check: Email Verification
-          if (!firebaseUser.emailVerified && email !== '123qwr23fsf@gmail.com') {
+          if (!firebaseUser.emailVerified) {
             await signOut(auth);
             set({ error: 'يرجى تفعيل بريدك الإلكتروني أولاً. تحقق من صندوق الوارد.', loading: false });
             return { success: false, notVerified: true };
