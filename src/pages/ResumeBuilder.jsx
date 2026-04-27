@@ -60,14 +60,16 @@ export default function ResumeBuilder() {
     };
   }, [language]);
 
+  const styleState = useStyleStore();
+
   useEffect(() => {
-    if (saveStatus === 'unsaved') {
-      handleAutoSave();
-    }
+    // Trigger auto-save if data changes OR if any style changes
+    handleAutoSave();
+    
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [data, saveStatus, handleAutoSave]);
+  }, [data, styleState, handleAutoSave]);
 
   return (
     <div className="builder-layout animate-fade-in" style={{ marginTop: '0', ...cssVars }}>

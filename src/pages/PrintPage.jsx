@@ -11,7 +11,6 @@ export default function PrintPage() {
   const [dataReady, setDataReady] = useState(false);
 
   const data = useResumeStore((state) => state.data);
-  const setData = useResumeStore((state) => state.setData);
   const getCssVars = useStyleStore((state) => state.getCssVars);
   const cssVars = getCssVars();
 
@@ -20,14 +19,50 @@ export default function PrintPage() {
     const cvId = params.get('id');
 
     if (cvId) {
+      // Fetch CV data from the public backend endpoint
       fetch(`${API_ROUTES.RESUMES}/${cvId}/public`)
         .then(res => {
           if (!res.ok) throw new Error('Failed to fetch public resume');
           return res.json();
         })
         .then(result => {
+          const metadata = result.metadata || {};
+          const styleConfig = result.styleConfig || {};
+          
+          // 1. Sync Style Store
+          useStyleStore.setState({
+            template: result.templateId || 'professional',
+            category: result.category || 'chronological',
+            language: result.language || 'en',
+            accentColor: styleConfig.accentColor || '#1E3A5F',
+            nameFontSize: styleConfig.nameFontSize || 22,
+            headingFontSize: styleConfig.headingFontSize || 14,
+            bodyFontSize: styleConfig.bodyFontSize || 12,
+            lineHeight: styleConfig.lineHeight || 1.5,
+            headerAlign: styleConfig.headerAlign || 'left',
+            marginTop: styleConfig.marginTop || 7,
+            marginBottom: styleConfig.marginBottom || 20,
+            marginSides: styleConfig.marginSides || 6,
+            sectionGap: styleConfig.sectionGap || 16,
+            columnFlowEnabled: styleConfig.columnFlowEnabled || false,
+          });
+
+          // 2. Sync Resume Store
           const loadedData = result.content || result.data || {};
-          setData(loadedData);
+          useResumeStore.setState({
+            resumeId: result._id || result.id,
+            data: loadedData,
+            layoutColumns: metadata.layoutColumns || {
+              columnSide: ['skills', 'languages', 'certificates', 'awards', 'references'],
+              columnMain: ['header', 'summary', 'experience', 'education', 'projects', 'volunteering']
+            },
+            customTitles: metadata.customTitles || {},
+            alignments: metadata.alignments || {},
+            sectionsStyles: metadata.sectionsStyles || {},
+            pageBreaks: metadata.pageBreaks || [],
+            saveStatus: 'saved',
+          });
+
           setLoading(false);
           // تأخير بسيط للتأكد من أن React أنهى الرسم بالكامل
           setTimeout(() => setDataReady(true), 500);
@@ -39,7 +74,7 @@ export default function PrintPage() {
     } else {
       setLoading(false);
     }
-  }, [location.search, setData]);
+  }, [location.search]);
 
   if (loading) {
     return null;

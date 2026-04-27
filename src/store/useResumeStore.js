@@ -195,6 +195,7 @@ const useResumeStore = create(
       // ── Backend Sync ───────────────────────────────
       saveToBackend: async () => {
         const state = get();
+        const styleState = useStyleStore.getState();
         set({ saveStatus: 'saving' });
 
         try {
@@ -212,6 +213,22 @@ const useResumeStore = create(
             },
             body: JSON.stringify({
               content: state.data,
+              templateId: styleState.template,
+              category: styleState.category,
+              language: styleState.language,
+              styleConfig: {
+                accentColor: styleState.accentColor,
+                nameFontSize: styleState.nameFontSize,
+                headingFontSize: styleState.headingFontSize,
+                bodyFontSize: styleState.bodyFontSize,
+                lineHeight: styleState.lineHeight,
+                headerAlign: styleState.headerAlign,
+                marginTop: styleState.marginTop,
+                marginBottom: styleState.marginBottom,
+                marginSides: styleState.marginSides,
+                sectionGap: styleState.sectionGap,
+                columnFlowEnabled: styleState.columnFlowEnabled,
+              },
               metadata: {
                 layoutColumns: state.layoutColumns,
                 customTitles: state.customTitles,
@@ -265,8 +282,27 @@ const useResumeStore = create(
 
           const result = await response.json();
           const metadata = result.metadata || {};
+          const styleConfig = result.styleConfig || {};
           
-          // Deep safety merge with initial data to prevent crashes
+          // Sync Style Store
+          useStyleStore.setState({
+            template: result.templateId || 'professional',
+            category: result.category || 'chronological',
+            language: result.language || 'en',
+            accentColor: styleConfig.accentColor || '#1E3A5F',
+            nameFontSize: styleConfig.nameFontSize || 22,
+            headingFontSize: styleConfig.headingFontSize || 14,
+            bodyFontSize: styleConfig.bodyFontSize || 12,
+            lineHeight: styleConfig.lineHeight || 1.5,
+            headerAlign: styleConfig.headerAlign || 'left',
+            marginTop: styleConfig.marginTop || 7,
+            marginBottom: styleConfig.marginBottom || 20,
+            marginSides: styleConfig.marginSides || 6,
+            sectionGap: styleConfig.sectionGap || 16,
+            columnFlowEnabled: styleConfig.columnFlowEnabled || false,
+          });
+
+          // Deep safety merge with initial data
           const loadedData = result.content || result.data || {};
           const safeData = {
             ...initialResumeData,
