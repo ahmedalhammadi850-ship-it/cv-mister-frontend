@@ -44,7 +44,7 @@ export default function AchievementMasterTemplate({
   const headingStyle = {
     color: accentColor,
     fontSize: config.headerSize,
-    fontWeight: 800,
+    fontWeight: 700,
     textTransform: 'uppercase',
     borderBottom: `2.5px solid ${accentColor}`,
     paddingBottom: '5px',

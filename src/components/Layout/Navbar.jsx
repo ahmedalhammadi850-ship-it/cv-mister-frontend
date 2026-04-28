@@ -134,6 +134,12 @@ export default function Navbar() {
     [data-section], [data-section-key] {
       font-family: ${exportFontFamily} !important;
     }
+
+    /* Cap font-weight for Arabic fonts which usually max out at 700 */
+    [dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3, [dir="rtl"] h4, [dir="rtl"] h5, [dir="rtl"] h6,
+    [dir="rtl"] .section-title, [dir="rtl"] .resume-heading, [dir="rtl"] .resume-name {
+      font-weight: 700 !important;
+    }
   </style>
 </head>
 <body>
