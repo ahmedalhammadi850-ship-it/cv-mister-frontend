@@ -1,5 +1,5 @@
 // ============================================================
-// ModernWaveTemplate — PDF Optimized Version 2.2
+// ModernWaveTemplate — PDF Optimized Version 2.3
 // Features curved background dividers and dual-tone full-height sidebar
 // Re-engineered for pixel-perfect PDF export in production environments
 // ============================================================
@@ -20,10 +20,18 @@ export default function ModernWaveTemplate({
 }) {
   const { layoutColumns } = useResumeStore();
   const IsDnd = pageId === 'main-canvas' || pageId === 'preview-canvas';
+  
+  // 🚀 CRITICAL: Force Arabic mode if language is 'ar' to prevent layout collapse
   const isRtl = language === 'ar';
   
-  const sideSections = layoutColumns?.columnSide?.filter(k => k !== 'contact' && k !== 'personal_info' && k !== 'header') || ['skills', 'education', 'languages'];
-  const basMainSections = layoutColumns?.columnMain?.filter(k => k !== 'personal_info' && k !== 'header') || ['summary', 'experience', 'projects'];
+  // Robust Sidebar/Main section detection with fallbacks
+  const sideSections = layoutColumns?.columnSide?.length > 0 
+    ? layoutColumns.columnSide.filter(k => k !== 'contact' && k !== 'personal_info' && k !== 'header')
+    : ['skills', 'education', 'languages']; // Fallback if store is lost during export
+    
+  const basMainSections = layoutColumns?.columnMain?.length > 0
+    ? layoutColumns.columnMain.filter(k => k !== 'personal_info' && k !== 'header')
+    : ['summary', 'experience', 'projects']; // Fallback if store is lost during export
   
   const customKeys = Object.keys(data).filter(k => k.startsWith('custom_') && Array.isArray(data[k]) && data[k].length > 0);
   const mainSections = [...basMainSections, ...customKeys.filter(k => !basMainSections.includes(k) && !sideSections.includes(k))];
@@ -47,7 +55,7 @@ export default function ModernWaveTemplate({
       width: '100%',
       minHeight: '297mm',
       display: 'flex',
-      flexDirection: isRtl ? 'row-reverse' : 'row', // 🚀 Use row-reverse for RTL to keep DOM order stable
+      flexDirection: isRtl ? 'row-reverse' : 'row',
       backgroundColor: '#f8fafc', 
       position: 'relative',
       margin: 0,
@@ -56,7 +64,7 @@ export default function ModernWaveTemplate({
       overflow: 'hidden'
     }}>
       
-      {/* 1. Main Column (Always first in DOM for better accessibility/parsing) */}
+      {/* 1. Main Column */}
       <div className="main-content" style={{ 
         width: MAIN_WIDTH,
         minWidth: MAIN_WIDTH,
@@ -65,7 +73,6 @@ export default function ModernWaveTemplate({
         paddingTop: `${mTop + 20}px`,
         position: 'relative',
         zIndex: 10,
-        // Responsive rounding based on position
         borderTopRightRadius: isRtl ? '0' : BORDER_RADIUS_MAIN,
         borderTopLeftRadius: isRtl ? BORDER_RADIUS_MAIN : '0',
         boxShadow: isRtl ? '10px 0 20px rgba(0,0,0,0.03)' : '-10px 0 20px rgba(0,0,0,0.03)',
@@ -109,11 +116,15 @@ export default function ModernWaveTemplate({
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
-        zIndex: 5
+        zIndex: 5,
+        // Ensure sidebar background is printed
+        boxShadow: 'inset 0 0 0 1000px #f8fafc'
       }}>
           {/* Top Wave Section (Only on first page) */}
           <div style={{ 
             backgroundColor: accentColor,
+            // Force background print for Puppeteer
+            boxShadow: `inset 0 0 0 1000px ${accentColor}`,
             padding: `${mTop + 20}px 25px 40px 25px`,
             borderBottomLeftRadius: isRtl ? '0' : BORDER_RADIUS_SIDEBAR,
             borderBottomRightRadius: isRtl ? BORDER_RADIUS_SIDEBAR : '0',
@@ -127,7 +138,7 @@ export default function ModernWaveTemplate({
 
           {/* Sidebar Content */}
           <div style={{ padding: '40px 25px', paddingTop: isFirstPage ? '40px' : `${mTop + 20}px` }}>
-              {filteredSide.map((key, index) => {
+              {filteredSide.length > 0 ? filteredSide.map((key, index) => {
                  const content = (
                    <div key={key} data-section data-section-key={key} style={{ marginBottom: `${s.section_spacing || 25}px` }}>
                      <h3 style={{
@@ -152,7 +163,11 @@ export default function ModernWaveTemplate({
                    </div>
                  );
                  return IsDnd ? <SectionDraggable key={key} id={`${key}-side-${pageId}`} index={index}>{content}</SectionDraggable> : content;
-              })}
+              }) : (
+                <div style={{ color: '#94a3b8', fontSize: '10pt', fontStyle: 'italic' }}>
+                  {isRtl ? 'لا توجد عناصر في القائمة الجانبية' : 'No sections in sidebar'}
+                </div>
+              )}
           </div>
       </div>
     </div>
