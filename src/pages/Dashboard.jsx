@@ -262,17 +262,27 @@ export default function Dashboard() {
           borderInlineEnd: '1px solid var(--border-default)',
           display: 'flex',
           flexDirection: 'column',
-          padding: '32px 16px',
-          height: 'calc(100vh - 56px)',
+          height: 'calc(100vh - 72px)',
           position: 'sticky',
-          top: '56px',
+          top: '72px',
           zIndex: 1000,
-          transition: 'all 0.3s ease'
+          transition: 'all 0.3s ease',
+          overflow: 'hidden'
         }}
       >
-        <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '16px' }}>
-          <div style={{ padding: '0 16px 24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(45deg, #3B82F6, #8B5CF6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '18px', fontWeight: 800 }}>
+        {isMobile && (
+          <button 
+            className="dashboard-sidebar-close"
+            onClick={() => setMobileSidebarOpen(false)}
+            style={{ position: 'absolute', top: '15px', [language === 'ar' ? 'left' : 'right']: '15px', zIndex: 1100 }}
+          >
+            <X size={20} />
+          </button>
+        )}
+
+        <div style={{ flex: 1, overflowY: 'auto', padding: '32px 16px' }}>
+          <div style={{ padding: '0 0 24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(45deg, #3B82F6, #8B5CF6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '18px', fontWeight: 800, flexShrink: 0 }}>
               {user?.fullName?.charAt(0)}
             </div>
             <div style={{ overflow: 'hidden' }}>
@@ -289,7 +299,7 @@ export default function Dashboard() {
           </div>
  
           {/* ── Subscription Status Widget ────────────────── */}
-          <div style={{ padding: '0 12px 16px' }}>
+          <div style={{ padding: '0 0 16px' }}>
             <div style={{
               background: 'rgba(59, 130, 246, 0.04)',
               borderRadius: '20px',
@@ -328,8 +338,8 @@ export default function Dashboard() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
                   <span style={{ fontWeight: 600 }}>
                     {language === 'ar' 
-                      ? `المتبقي: ${user?.resumeCredits || 0} سير ذاتية` 
-                      : `Remaining: ${user?.resumeCredits || 0} resumes`
+                      ? `المتبقي: ${user?.resumeCredits || 0}` 
+                      : `Remaining: ${user?.resumeCredits || 0}`
                     }
                   </span>
                 </div>
@@ -348,7 +358,7 @@ export default function Dashboard() {
                 <div style={{ fontSize: '10px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <Calendar size={12} color="#64748b" />
                   <span>
-                    {language === 'ar' ? 'تاريخ الانتهاء:' : 'Ends:'} {new Date(user.subscriptionEndDate).toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US')}
+                    {language === 'ar' ? 'ينتهي:' : 'Ends:'} {new Date(user.subscriptionEndDate).toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US')}
                   </span>
                 </div>
               )}
@@ -356,52 +366,29 @@ export default function Dashboard() {
           </div>
 
           {/* ── Quick Actions ────────────────────────────────── */}
-          <div style={{ padding: '0 12px 24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ padding: '0 0 24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <button
               onClick={handleCreateResume}
               style={{
                 width: '100%',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '16px',
-                padding: '14px',
-                borderRadius: '18px',
+                gap: '12px',
+                padding: '12px',
+                borderRadius: '16px',
                 border: '1px solid var(--border-default)',
                 background: 'linear-gradient(135deg, var(--bg-card), var(--bg-app))',
                 color: 'var(--text-primary)',
                 cursor: 'pointer',
                 textAlign: language === 'ar' ? 'right' : 'left',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
-              }}
-              onMouseEnter={(e) => { 
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.borderColor = '#3B82F6';
-                e.currentTarget.style.boxShadow = '0 10px 20px -5px rgba(59,130,246,0.15)';
-              }}
-              onMouseLeave={(e) => { 
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.borderColor = 'var(--border-default)';
-                e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.02)';
+                transition: 'all 0.3s ease',
               }}
             >
-              <div style={{ 
-                width: '42px', 
-                height: '42px', 
-                borderRadius: '14px', 
-                background: 'linear-gradient(135deg, #3B82F6, #1D4ED8)', 
-                color: '#fff', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                flexShrink: 0,
-                boxShadow: '0 4px 10px rgba(59,130,246,0.3)'
-              }}>
-                <Plus size={20} strokeWidth={3} />
+              <div style={{ width: '36px', height: '36px', borderRadius: '12px', background: 'linear-gradient(135deg, #3B82F6, #1D4ED8)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Plus size={18} />
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                <span style={{ fontWeight: 800, fontSize: '15px', letterSpacing: '-0.01em' }}>{language === 'ar' ? 'سيرة ذاتية جديدة' : 'New Resume'}</span>
-                <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 500, opacity: 0.8 }}>{language === 'ar' ? 'ابدأ من الصفر بالقوالب' : 'Start from templates'}</span>
+              <div style={{ overflow: 'hidden' }}>
+                <div style={{ fontWeight: 700, fontSize: '14px' }}>{language === 'ar' ? 'سيرة جديدة' : 'New Resume'}</div>
               </div>
             </button>
 
@@ -411,56 +398,33 @@ export default function Dashboard() {
                 width: '100%',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '16px',
-                padding: '14px',
-                borderRadius: '18px',
+                gap: '12px',
+                padding: '12px',
+                borderRadius: '16px',
                 border: '1px solid var(--border-default)',
                 background: 'linear-gradient(135deg, var(--bg-card), var(--bg-app))',
                 color: 'var(--text-primary)',
                 cursor: 'pointer',
                 textAlign: language === 'ar' ? 'right' : 'left',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
-              }}
-              onMouseEnter={(e) => { 
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.borderColor = '#8B5CF6';
-                e.currentTarget.style.boxShadow = '0 10px 20px -5px rgba(139,92,246,0.15)';
-              }}
-              onMouseLeave={(e) => { 
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.borderColor = 'var(--border-default)';
-                e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.02)';
+                transition: 'all 0.3s ease',
               }}
             >
-              <div style={{ 
-                width: '42px', 
-                height: '42px', 
-                borderRadius: '14px', 
-                background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)', 
-                color: '#fff', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                flexShrink: 0,
-                boxShadow: '0 4px 10px rgba(139,92,246,0.3)'
-              }}>
-                <Sparkles size={20} strokeWidth={2.5} />
+              <div style={{ width: '36px', height: '36px', borderRadius: '12px', background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Sparkles size={18} />
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                <span style={{ fontWeight: 800, fontSize: '15px', letterSpacing: '-0.01em' }}>{language === 'ar' ? 'رسالة تغطية جديدة' : 'New Cover Letter'}</span>
-                <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 500, opacity: 0.8 }}>{language === 'ar' ? 'اكتب باستخدام الذكاء الاصطناعي' : 'Generate with AI'}</span>
+              <div style={{ overflow: 'hidden' }}>
+                <div style={{ fontWeight: 700, fontSize: '14px' }}>{language === 'ar' ? 'رسالة تغطية' : 'Cover Letter'}</div>
               </div>
             </button>
           </div>
 
-          <div style={{ height: '1px', background: 'var(--border-default)', margin: '0 24px 16px', opacity: 0.4 }} />
+          <div style={{ height: '1px', background: 'var(--border-default)', margin: '0 0 16px', opacity: 0.4 }} />
 
           {sidebarLinks.map((link) => (
             <button
               key={link.id}
               className="sidebar-link"
-              onClick={() => setActiveTab(link.id)}
+              onClick={() => { setActiveTab(link.id); if(isMobile) setMobileSidebarOpen(false); }}
               style={{
                 width: '100%',
                 display: 'flex',
@@ -472,7 +436,7 @@ export default function Dashboard() {
                 background: activeTab === link.id ? 'rgba(59,130,246,0.1)' : 'transparent',
                 color: activeTab === link.id ? '#3B82F6' : 'var(--text-secondary)',
                 cursor: 'pointer',
-                marginBottom: '8px',
+                marginBottom: '4px',
                 fontWeight: 600,
                 transition: 'all 0.2s ease',
                 textAlign: language === 'ar' ? 'right' : 'left'
@@ -482,9 +446,9 @@ export default function Dashboard() {
               {link.label}
             </button>
           ))}
-        </div>
 
-        <div style={{ paddingTop: '20px', borderTop: '1px solid var(--border-default)' }}>
+          <div style={{ height: '1px', background: 'var(--border-default)', margin: '12px 0', opacity: 0.4 }} />
+
           <button 
             onClick={() => logout()}
             style={{
@@ -515,7 +479,7 @@ export default function Dashboard() {
             inset: 0,
             background: 'rgba(0,0,0,0.5)',
             backdropFilter: 'blur(4px)',
-            zIndex: 90
+            zIndex: 10000
           }}
         />
       )}
@@ -527,9 +491,10 @@ export default function Dashboard() {
             onClick={() => setMobileSidebarOpen(true)}
             style={{
               position: 'fixed',
-              top: '20px',
-              right: '20px',
-              zIndex: 80,
+              top: '85px',
+              left: language === 'ar' ? 'auto' : '20px',
+              right: language === 'ar' ? '20px' : 'auto',
+              zIndex: 999,
               width: '44px',
               height: '44px',
               borderRadius: '12px',
@@ -618,7 +583,7 @@ export default function Dashboard() {
                   <div className="animate-pulse">{language === 'ar' ? 'جاري التحميل...' : 'Syncing with cloud...'}</div>
                 </div>
               ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
+                <div className="doc-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
                   
                   {/* Existing Documents */}
                   {filteredDocs.map(doc => (
@@ -925,7 +890,7 @@ export default function Dashboard() {
                   <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <User size={20} color="#3B82F6" /> {language === 'ar' ? 'المعلومات الشخصية' : 'Personal Information'}
                   </h3>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
+                  <div className="settings-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
                     <div>
                       <label className="form-label">{language === 'ar' ? 'الاسم الكامل' : 'Full Name'}</label>
                       <input 

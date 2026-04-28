@@ -2612,24 +2612,69 @@ body {
     width: 100% !important;
   }
 
-  .dashboard-sidebar {
-    position: fixed !important;
-    right: 0 !important;
-    top: 0 !important;
-    height: 100vh !important;
-    width: 280px !important;
-    transform: translateX(100%);
-    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    z-index: 10000 !important;
-    padding-top: 80px !important; /* space for toggle */
+  .dashboard-main {
+    padding: 20px !important;
+    margin: 0 !important;
   }
 
-  .dashboard-sidebar.mobile-open {
+  .dashboard-sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    height: 100vh !important;
+    width: 280px !important;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    z-index: 10001 !important;
+    padding-top: 20px !important; 
+    box-shadow: 0 0 40px rgba(0,0,0,0.15);
+    background: var(--bg-surface) !important;
+  }
+
+  /* LTR Sidebar */
+  [dir="ltr"] .dashboard-sidebar {
+    left: 0 !important;
+    right: auto !important;
+    transform: translateX(-100%) !important;
+    border-right: 1px solid var(--border-default) !important;
+  }
+  [dir="ltr"] .dashboard-sidebar.mobile-open {
+    transform: translateX(0) !important;
+  }
+
+  /* RTL Sidebar */
+  [dir="rtl"] .dashboard-sidebar {
+    right: 0 !important;
+    left: auto !important;
+    transform: translateX(100%) !important;
+    border-left: 1px solid var(--border-default) !important;
+  }
+  [dir="rtl"] .dashboard-sidebar.mobile-open {
     transform: translateX(0) !important;
   }
 
   .dashboard-sidebar span:not(.tab-icon) {
-    display: block !important;
+    display: inline-block !important;
+  }
+
+  .dashboard-sidebar-close {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 10;
+    cursor: pointer;
+  }
+
+  [dir="rtl"] .dashboard-sidebar-close {
+    right: auto;
+    left: 20px;
   }
 }
 
@@ -2642,6 +2687,10 @@ body {
   
   .pm-upload-zone {
     padding: 24px 16px !important;
+  }
+
+  .settings-grid {
+    grid-template-columns: 1fr !important;
   }
 }
 

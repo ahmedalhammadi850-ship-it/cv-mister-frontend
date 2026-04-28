@@ -3,7 +3,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://cv-mister-backend-production.up.railway.app/api/$1"
+      "destination": "https://cv-mister-backend-coly.onrender.com/api/$1"
     },
     {
       "source": "/(.*)",
