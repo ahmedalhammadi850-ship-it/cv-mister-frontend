@@ -87,6 +87,11 @@ export default function Navbar() {
         console.warn('Could not extract all styles', e);
       }
 
+      // Determine the correct font family for export
+      const exportFontFamily = isAr 
+        ? "'Readex Pro', 'IBM Plex Sans Arabic', 'Cairo', 'Tajawal', sans-serif"
+        : "'Inter', 'Roboto', sans-serif";
+
       // Prepare the full HTML package with exact CSS and Fonts
       const resumeHtml = `
 <!DOCTYPE html>
@@ -101,17 +106,26 @@ export default function Navbar() {
     ${allStyles}
     
     /* Print optimizations to ensure exact match */
-    body {
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    @page { size: A4; margin: 0; }
+    html, body {
       margin: 0;
       padding: 0;
       background: white !important;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
+      font-family: ${exportFontFamily};
+      direction: ${isAr ? 'rtl' : 'ltr'};
     }
     .a4-page-wrapper {
       box-shadow: none !important;
       margin: 0 !important;
       border: none !important;
+    }
+    /* Ensure all text inherits the correct font */
+    h1, h2, h3, h4, h5, h6, p, span, div, li, td, th, a, label, input, textarea, select, button {
+      font-family: inherit;
     }
   </style>
 </head>

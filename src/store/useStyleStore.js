@@ -56,8 +56,11 @@ const useStyleStore = create(
       // ── CSS Variable Generation ────────────────────
       getCssVars: () => {
         const s = get();
+        const fontFamily = s.language === 'ar' 
+          ? "'Readex Pro', 'IBM Plex Sans Arabic', 'Cairo', 'Tajawal', sans-serif"
+          : "'Inter', 'Roboto', sans-serif";
         return {
-          '--global-font': "'Roboto', 'Arial', sans-serif",
+          '--global-font': fontFamily,
           '--accent-color': s.accentColor,
           '--name-font-size': `${s.nameFontSize}pt`,
           '--heading-font-size': `${s.headingFontSize}pt`,
