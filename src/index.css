@@ -2692,6 +2692,34 @@ body {
   .settings-grid {
     grid-template-columns: 1fr !important;
   }
+
+  .mobile-sidebar-toggle {
+    right: 20px !important;
+    left: auto !important;
+  }
+}
+
+.mobile-sidebar-toggle {
+  position: fixed;
+  top: 85px;
+  z-index: 999;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  color: var(--text-primary);
+  right: auto;
+  left: 20px;
+}
+
+[dir="rtl"] .mobile-sidebar-toggle {
+  right: 20px !important;
+  left: auto !important;
 }
 
 .admin-mobile-toggle {

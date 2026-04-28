@@ -488,24 +488,8 @@ export default function Dashboard() {
       <main className="dashboard-main" style={{ flex: 1, padding: '40px 32px', overflowY: 'auto', position: 'relative' }}>
         {isMobile && (
           <button 
+            className="mobile-sidebar-toggle"
             onClick={() => setMobileSidebarOpen(true)}
-            style={{
-              position: 'fixed',
-              top: '85px',
-              left: language === 'ar' ? 'auto' : '20px',
-              right: language === 'ar' ? '20px' : 'auto',
-              zIndex: 999,
-              width: '44px',
-              height: '44px',
-              borderRadius: '12px',
-              background: 'var(--bg-surface)',
-              border: '1px solid var(--border-default)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-              color: 'var(--text-primary)'
-            }}
           >
             <LayoutGrid size={24} />
           </button>
