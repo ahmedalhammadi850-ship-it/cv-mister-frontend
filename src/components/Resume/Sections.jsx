@@ -568,8 +568,11 @@ export function ContactSection({ data, headingStyle = {}, language = 'en', noHea
 
 
 /* ── Section Renderer (by key) ───────────────────────────── */
-export function renderSection(key, data, props = {}) {
-  const globalLanguage = useStyleStore.getState().language;
+export function RenderSection({ sectionKey, data, ...props }) {
+  const globalLanguage = useStyleStore((s) => s.language);
+  const sectionsStyles = useResumeStore((s) => s.sectionsStyles) || {};
+  const customTitles = useResumeStore((s) => s.customTitles) || {};
+  
   const { 
     headingStyle: originalHeadingStyle = {}, 
     accentColor = '#1E3A5F', 
@@ -581,13 +584,9 @@ export function renderSection(key, data, props = {}) {
     textColor = '#374151' 
   } = props;
 
-  const store = useResumeStore.getState();
-  const { sectionsStyles: storeStyles = {}, customTitles = {} } = store;
-  const sectionsStyles = data?.settings?.sections_styles || storeStyles;
-
   if (headingOnly) {
-    if (key === 'header' || key === 'personal_info') return null;
-    if (key.startsWith('custom_')) return customTitles[key] || key;
+    if (sectionKey === 'header' || sectionKey === 'personal_info') return null;
+    if (sectionKey.startsWith('custom_')) return customTitles[sectionKey] || sectionKey;
     
     const defaultTitles = {
       summary: t('professional_summary', language),
@@ -601,10 +600,10 @@ export function renderSection(key, data, props = {}) {
       volunteering: t('volunteering', language),
       references: t('references', language),
     };
-    return customTitles[key] || defaultTitles[key] || key;
+    return customTitles[sectionKey] || defaultTitles[sectionKey] || sectionKey;
   }
 
-  const sectionColor = sectionsStyles[key]?.color;
+  const sectionColor = sectionsStyles[sectionKey]?.color;
 
   // Clone and override color if section-specific color is set
   const headingStyle = { ...originalHeadingStyle };
@@ -617,24 +616,24 @@ export function renderSection(key, data, props = {}) {
   const localAccentColor = sectionColor || accentColor;
 
   // Custom section check first
-  if (key.startsWith('custom_')) {
-    const items = data[key] || [];
-    const customTitle = useResumeStore.getState().customTitles[key] || key;
-    const { alignments = {} } = useResumeStore.getState();
+  if (sectionKey.startsWith('custom_')) {
+    const items = data[sectionKey] || [];
+    const customTitle = customTitles[sectionKey] || sectionKey;
+    const alignments = useResumeStore.getState().alignments || {};
 
     const filteredItems = visibleSections 
-      ? items.filter((_, idx) => visibleSections.includes(`${key}-${idx}`))
+      ? items.filter((_, idx) => visibleSections.includes(`${sectionKey}-${idx}`))
       : items;
 
     if (filteredItems.length === 0) return null;
 
     return (
-      <div data-section data-section-key={key} className="resume-section">
+      <div data-section data-section-key={sectionKey} className="resume-section">
         {!noHeading && <h2 className="resume-heading section-title" style={headingStyle}>{customTitle}</h2>}
         {!headingOnly && filteredItems.map((item) => {
           const trueIdx = items.indexOf(item);
           return (
-          <div key={item.id || trueIdx} data-section-key={`${key}-${trueIdx}`} style={{ marginTop: '12px' }}>
+          <div key={item.id || trueIdx} data-section-key={`${sectionKey}-${trueIdx}`} style={{ marginTop: '12px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
               <h3 style={{ fontSize: '11pt', fontWeight: 600, color: sectionColor || (['#FFFFFF', '#ffffff', '#fff', '#F8FAFC', '#f8fafc'].includes(textColor) ? textColor : '#111827') }}>{item.title}</h3>
               <span style={{ fontSize: '9pt', color: sectionColor || (['#FFFFFF', '#ffffff', '#fff', '#F8FAFC', '#f8fafc'].includes(textColor) ? 'rgba(255,255,255,0.7)' : localAccentColor), fontWeight: 500, whiteSpace: 'nowrap' }}>{item.subtitle}</span>
@@ -645,7 +644,7 @@ export function renderSection(key, data, props = {}) {
                 color: sectionColor || textColor, 
                 marginTop: '6px', 
                 lineHeight: 'var(--line-height-global)',
-                textAlign: alignments[`${key}-${item.id}`] || 'inherit'
+                textAlign: alignments[`${sectionKey}-${item.id}`] || 'inherit'
               }}>
                 {item.description}
               </p>
@@ -685,11 +684,15 @@ export function renderSection(key, data, props = {}) {
     references:   <ReferencesSection items={data.references} {...commonProps} textColor={textColor} />,
   };
 
-  const content = map[key] || null;
+  const content = map[sectionKey] || null;
   if (!content) return null;
 
   // Handle header headingOnly logic
-  if (key === 'header' && headingOnly) return null;
+  if (sectionKey === 'header' && headingOnly) return null;
 
   return content;
+}
+
+export function renderSection(key, data, props = {}) {
+  return <RenderSection sectionKey={key} data={data} {...props} />;
 }
