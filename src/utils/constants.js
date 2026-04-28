@@ -29,6 +29,7 @@ export const TEMPLATES = {
   OCEAN_BLUE: 'ocean_blue',
   ATS: 'ats',
   MODERN_WAVE: 'modern_wave',
+  ELITE_CLEAN: 'elite_clean',
 };
 
 export const TEMPLATE_LIST = [
@@ -66,6 +67,7 @@ export const TEMPLATE_LIST = [
   { id: TEMPLATES.GRADIENT_TOP,      label: 'tpl_gradient_top',       icon: '🌅', color: '#6366F1', type: 'modern', isPremium: true },  
   { id: TEMPLATES.SKY_SPLIT,         label: 'tpl_sky_split',          icon: '🌌', color: '#94a3b8', type: 'modern', isPremium: true },  
   { id: TEMPLATES.MODERN_WAVE,       label: 'tpl_modern_wave',        icon: '🌊', color: '#1e3a8a', type: 'modern', isPremium: true },
+  { id: TEMPLATES.ELITE_CLEAN,       label: 'tpl_elite_clean',        icon: '💎', color: '#0f172a', type: 'modern', isPremium: true },
 ];
 
 // ── 6 Layout Categories ─────────────────────────────────────

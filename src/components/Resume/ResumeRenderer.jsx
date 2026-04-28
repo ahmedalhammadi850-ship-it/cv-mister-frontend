@@ -33,6 +33,7 @@ import SubtleBarTemplate from './templates/SubtleBarTemplate';
 import SkySplitTemplate from './templates/SkySplitTemplate';
 import OceanBlueTemplate from './templates/OceanBlueTemplate';
 import ModernWaveTemplate from './templates/ModernWaveTemplate';
+import EliteCleanTemplate from './templates/EliteCleanTemplate';
 import ATSTemplate from './templates/ATSTemplate';
 
 // ── Strategy Map ─────────────────────────────────────────
@@ -61,6 +62,7 @@ const TEMPLATE_MAP = {
   [TEMPLATES.SKY_SPLIT]:         SkySplitTemplate,
   [TEMPLATES.OCEAN_BLUE]:        OceanBlueTemplate,
   [TEMPLATES.MODERN_WAVE]:       ModernWaveTemplate,
+  [TEMPLATES.ELITE_CLEAN]:       EliteCleanTemplate,
   [TEMPLATES.ATS]:               ATSTemplate,
 };
 
