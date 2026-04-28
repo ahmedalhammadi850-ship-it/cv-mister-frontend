@@ -66,7 +66,7 @@ export default function A4PageWrapper({ deferredData }) {
 
     const distributed = splitContentToPages(measureRef.current, {
       marginTop: parseInt(cssVars['--margin-top']) || 20,
-      marginBottom: parseInt(cssVars['--margin-bottom']) || 20,
+      marginBottom: 20, // 🚀 Forced 20px per user request
     });
 
     setPages(distributed);
