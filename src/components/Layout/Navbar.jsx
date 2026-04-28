@@ -98,10 +98,13 @@ export default function Navbar() {
 <html lang="${language}" dir="${isAr ? 'rtl' : 'ltr'}">
 <head>
   <meta charset="UTF-8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Cairo:wght@400;600;700&family=Almarai:wght@300;400;700;800&family=Readex+Pro:wght@200;300;400;500;600;700&family=Tajawal:wght@300;400;500;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
     :root {
       ${cssVarsString}
+      --global-font: ${exportFontFamily};
     }
     ${allStyles}
     
@@ -115,7 +118,7 @@ export default function Navbar() {
       margin: 0;
       padding: 0;
       background: white !important;
-      font-family: ${exportFontFamily};
+      font-family: ${exportFontFamily} !important;
       direction: ${isAr ? 'rtl' : 'ltr'};
     }
     .a4-page-wrapper {
@@ -123,9 +126,13 @@ export default function Navbar() {
       margin: 0 !important;
       border: none !important;
     }
-    /* Ensure all text inherits the correct font */
-    h1, h2, h3, h4, h5, h6, p, span, div, li, td, th, a, label, input, textarea, select, button {
-      font-family: inherit;
+    /* Force correct font on ALL resume elements */
+    h1, h2, h3, h4, h5, h6, p, span, div, li, td, th, a, label,
+    .resume-heading, .section-title, .resume-name, .resume-body,
+    .resume-section, .section-title-text, .experience-item,
+    .education-item, .project-item, .skill-bar-bg,
+    [data-section], [data-section-key] {
+      font-family: ${exportFontFamily} !important;
     }
   </style>
 </head>
