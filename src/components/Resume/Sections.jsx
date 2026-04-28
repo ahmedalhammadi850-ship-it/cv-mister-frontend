@@ -581,7 +581,9 @@ export function renderSection(key, data, props = {}) {
     textColor = '#374151' 
   } = props;
 
-  const { sectionsStyles = {}, customTitles = {} } = useResumeStore.getState();
+  const store = useResumeStore.getState();
+  const { sectionsStyles: storeStyles = {}, customTitles = {} } = store;
+  const sectionsStyles = data?.settings?.sections_styles || storeStyles;
 
   if (headingOnly) {
     if (key === 'header' || key === 'personal_info') return null;

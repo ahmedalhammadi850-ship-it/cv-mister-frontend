@@ -139,11 +139,15 @@ export default function ModernWaveTemplate({
           {/* Sidebar Content */}
           <div style={{ padding: '40px 25px', paddingTop: isFirstPage ? '40px' : `${mTop + 20}px` }}>
               {filteredSide.map((key, index) => {
+                 const sectionColor = data.metadata?.sectionsStyles?.[key]?.color || data.settings?.sectionsStyles?.[key]?.color;
+                 // Note: sectionsStyles is also available in the store, but templates get it via data.settings bridge in A4PageWrapper
+                 const sColor = s.sections_styles?.[key]?.color || sectionColor;
+
                  const content = (
                    <div key={key} data-section data-section-key={key} style={{ marginBottom: `${s.section_spacing || 25}px` }}>
                      <h3 style={{
-                        color: '#1e293b',
-                        borderBottom: `2px solid ${accentColor}30`,
+                        color: sColor || '#1e293b',
+                        borderBottom: `2px solid ${sColor || (accentColor + '30')}`,
                         paddingBottom: '8px',
                         marginBottom: '18px',
                         fontSize: `${s.header_size || 12}pt`,
@@ -154,7 +158,7 @@ export default function ModernWaveTemplate({
                      </h3>
                      {renderSection(key, data, { 
                        noHeading: true,
-                       accentColor, 
+                       accentColor: sColor || accentColor, 
                        language, 
                        visibleSections, 
                        textColor: '#475569',

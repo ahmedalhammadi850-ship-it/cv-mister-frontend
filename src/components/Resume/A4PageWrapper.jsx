@@ -18,7 +18,7 @@ import { renderSection } from './Sections';
 import { CATEGORY_SECTION_ORDER, CATEGORIES } from '../../utils/constants';
 
 export default function A4PageWrapper({ deferredData }) {
-  const { layoutColumns, customTitles, pageBreaks } = useResumeStore();
+  const { layoutColumns, customTitles, pageBreaks, sectionsStyles } = useResumeStore();
   const storeData = useResumeStore((s) => s.data);
   const {
     template, category, language, accentColor, getCssVars, columnFlowEnabled,
@@ -47,6 +47,7 @@ export default function A4PageWrapper({ deferredData }) {
       margin_side: storeMarginSides,
       section_spacing: sectionGap,
       header_align: headerAlign,
+      sections_styles: sectionsStyles,
     }
   };
 
