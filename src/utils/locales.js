@@ -89,7 +89,6 @@ export const translations = {
     tpl_ocean_blue: "Ocean Blue",
     tpl_ats: "ATS Optimized",
     tpl_modern_wave: "Modern Wave",
-    tpl_elite_clean: "Elite Clean",
     
     // Style Sidebar
     accent_color: "🎨 Accent Color",
@@ -219,7 +218,6 @@ export const translations = {
     tpl_ocean_blue: "أوشن بلو",
     tpl_ats: "توافق ATS عالي",
     tpl_modern_wave: "تموج عصري",
-    tpl_elite_clean: "احترافي راقي",
     
     // Style Sidebar
     accent_color: "🎨 اللون البارز",
