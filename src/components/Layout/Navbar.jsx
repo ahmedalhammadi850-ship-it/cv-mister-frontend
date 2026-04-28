@@ -140,6 +140,12 @@ export default function Navbar() {
     [dir="rtl"] .section-title, [dir="rtl"] .resume-heading, [dir="rtl"] .resume-name {
       font-weight: 700 !important;
     }
+
+    /* 🚨 CRITICAL FIX: Disable letter-spacing for Arabic text */
+    /* Letter-spacing causes Arabic characters to disconnect, making them unreadable. */
+    [dir="rtl"], [dir="rtl"] * {
+      letter-spacing: normal !important;
+    }
   </style>
 </head>
 <body>

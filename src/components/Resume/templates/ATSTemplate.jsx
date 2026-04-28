@@ -50,7 +50,7 @@ export default function AchievementMasterTemplate({
     paddingBottom: '5px',
     marginBottom: '10px',
     marginTop: '12px',
-    letterSpacing: '0.08em',
+    letterSpacing: isAr ? 'normal' : '0.08em',
     fontFamily: isAr ? 'var(--global-font)' : 'inherit'
   };
 
