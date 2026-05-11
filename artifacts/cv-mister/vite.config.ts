@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
@@ -28,12 +28,35 @@ if (!basePath) {
 
 const BACKEND = 'https://cv-mister-backend-coly.onrender.com';
 
+function hmrKeepalive(): Plugin {
+  return {
+    name: 'hmr-keepalive',
+    apply: 'serve',
+    configureServer(server) {
+      let timer: ReturnType<typeof setInterval> | null = null;
+
+      server.httpServer?.on('listening', () => {
+        timer = setInterval(() => {
+          try {
+            server.ws.send({ type: 'custom', event: 'keepalive', data: {} });
+          } catch {}
+        }, 15000);
+      });
+
+      server.httpServer?.on('close', () => {
+        if (timer) clearInterval(timer);
+      });
+    },
+  };
+}
+
 export default defineConfig({
   base: basePath,
   plugins: [
     react(),
     tailwindcss(),
     runtimeErrorOverlay(),
+    hmrKeepalive(),
     ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined
       ? [

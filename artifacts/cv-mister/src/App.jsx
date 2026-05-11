@@ -3,7 +3,7 @@
 // ============================================================
 
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
 import Navbar from './components/Layout/Navbar';
@@ -36,6 +36,9 @@ import useAuthStore from './store/useAuthStore';
 import useThemeStore from './store/useThemeStore';
 import useCMSStore from './store/useCMSStore';
 
+const ROUTE_KEY = 'cv_last_route';
+const SKIP_RESTORE = ['/', '/login', '/register', '/forgot-password'];
+
 // Inner component to access useLocation inside Router
 function AppContent() {
   const loadSettings = useCMSStore((s) => s.loadSettings);
@@ -43,6 +46,7 @@ function AppContent() {
   const user = useAuthStore((s) => s.user);
   const darkMode = useThemeStore((s) => s.darkMode);
   const location = useLocation();
+  const navigate = useNavigate();
   const isAdminRoute = location.pathname.startsWith('/admin');
   const isPrintRoute = location.pathname.startsWith('/cv-print');
   const isAppRoute = location.pathname.startsWith('/builder') || location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/admin') || isPrintRoute;
@@ -83,6 +87,29 @@ function AppContent() {
     }
   });
 
+
+  // ── Route save on every navigation ───────────────────────────
+  useEffect(() => {
+    const path = location.pathname;
+    if (!SKIP_RESTORE.includes(path) && !path.startsWith('/reset-password')) {
+      try { sessionStorage.setItem(ROUTE_KEY, path + location.search); } catch {}
+    }
+  }, [location]);
+
+  // ── Route restore after page reload ──────────────────────────
+  useEffect(() => {
+    try {
+      const navEntry = performance.getEntriesByType('navigation')[0];
+      const isReload = navEntry?.type === 'reload' || navEntry?.type === 'back_forward';
+      if (isReload && location.pathname === '/') {
+        const saved = sessionStorage.getItem(ROUTE_KEY);
+        if (saved && saved !== '/') {
+          sessionStorage.removeItem(ROUTE_KEY);
+          navigate(saved, { replace: true });
+        }
+      }
+    } catch {}
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load CMS content and Sync dark class with HTML element
   useEffect(() => {
@@ -176,39 +203,18 @@ function AppContent() {
 }
 
 function HydrationGate({ children }) {
-  const [hydrated, setHydrated] = useState(false);
+  const [hydrated, setHydrated] = useState(
+    () => useAuthStore.persist.hasHydrated()
+  );
 
   useEffect(() => {
-    if (useAuthStore.persist.hasHydrated()) {
-      setHydrated(true);
-    } else {
-      const unsub = useAuthStore.persist.onFinishHydration(() => {
-        setHydrated(true);
-      });
-      return () => unsub();
-    }
-  }, []);
+    if (hydrated) return;
+    const unsub = useAuthStore.persist.onFinishHydration(() => setHydrated(true));
+    if (useAuthStore.persist.hasHydrated()) setHydrated(true);
+    return () => unsub();
+  }, [hydrated]);
 
-  if (!hydrated) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'var(--bg-base, #0f172a)',
-      }}>
-        <div style={{
-          width: '40px', height: '40px',
-          border: '3px solid rgba(99,102,241,0.2)',
-          borderTop: '3px solid #6366f1',
-          borderRadius: '50%',
-          animation: 'spin 0.8s linear infinite',
-        }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      </div>
-    );
-  }
+  if (!hydrated) return null;
 
   return children;
 }
