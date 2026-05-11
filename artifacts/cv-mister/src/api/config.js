@@ -1,15 +1,17 @@
-const BACKEND_URL = 'https://cv-mister-backend-coly.onrender.com';
+const BACKEND_URL = import.meta.env.DEV
+  ? ''
+  : 'https://cv-mister-backend-coly.onrender.com';
 
 export const API_BASE_URL = BACKEND_URL;
 
 export const API_ROUTES = {
-  AUTH: `${API_BASE_URL}/api/auth`,
-  RESUMES: `${API_BASE_URL}/api/resumes`,
-  COVER_LETTERS: `${API_BASE_URL}/api/cover-letters`,
-  ADMIN: `${API_BASE_URL}/api/admin`,
-  UPGRADE: `${API_BASE_URL}/api/upgrade`,
-  PAYMENTS: `${API_BASE_URL}/api/payments`,
-  CONTACT: `${API_BASE_URL}/api/contact`,
-  CONTENT: `${API_BASE_URL}/api/content`,
-  GENERATE_PDF: `${API_BASE_URL}/api/generate-pdf`,
+  AUTH: `${BACKEND_URL}/api/auth`,
+  RESUMES: `${BACKEND_URL}/api/resumes`,
+  COVER_LETTERS: `${BACKEND_URL}/api/cover-letters`,
+  ADMIN: `${BACKEND_URL}/api/admin`,
+  UPGRADE: `${BACKEND_URL}/api/upgrade`,
+  PAYMENTS: `${BACKEND_URL}/api/payments`,
+  CONTACT: `${BACKEND_URL}/api/contact`,
+  CONTENT: `${BACKEND_URL}/api/content`,
+  GENERATE_PDF: `${BACKEND_URL}/api/generate-pdf`,
 };
