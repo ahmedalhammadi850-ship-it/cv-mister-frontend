@@ -87,7 +87,29 @@ export default function Register() {
       setIsSubmitted(true);
     } else {
       const storeError = useAuthStore.getState().error;
-      toast.error(storeError || (language === 'ar' ? 'حدث خطأ أثناء إنشاء الحساب' : 'Registration failed'));
+
+      // If Firebase account was created but backend sync failed (Network Error / server sleeping),
+      // treat it as a partial success — show the email verification screen.
+      const isNetworkError =
+        !storeError ||
+        storeError === 'Network Error' ||
+        storeError?.toLowerCase?.().includes('network') ||
+        storeError?.toLowerCase?.().includes('failed to fetch');
+
+      const { auth: firebaseAuth } = await import('../../config/firebase');
+      const currentUser = firebaseAuth.currentUser;
+
+      if (isNetworkError && currentUser) {
+        // Firebase account exists — backend sync is temporarily down, proceed to verification
+        setRegisteredEmail(currentUser.email || formData.email);
+        setIsSubmitted(true);
+      } else if (storeError?.includes('مسجل بالفعل') || storeError?.includes('already-in-use')) {
+        toast.error(language === 'ar'
+          ? 'هذا البريد الإلكتروني مسجل بالفعل. يرجى تسجيل الدخول.'
+          : 'This email is already registered. Please sign in.');
+      } else {
+        toast.error(storeError || (language === 'ar' ? 'حدث خطأ أثناء إنشاء الحساب' : 'Registration failed'));
+      }
     }
   };
 
