@@ -3,6 +3,8 @@
 // Architecture:
 //   - Firebase: ONLY for email verification (send + check)
 //   - MongoDB (backend): account creation, login, JWT, user data
+//   - Legacy fallback: accounts created via old Firebase-only flow
+//     use Firebase ID token if backend password login is unavailable
 // ============================================================
 
 import { create } from 'zustand';
@@ -19,52 +21,92 @@ const useAuthStore = create(
       error: null,
 
       // ── LOGIN ─────────────────────────────────────────────────
-      // 1. Firebase → check emailVerified only
+      // 1. Firebase → check emailVerified only (keep session for fallback token)
       // 2. Backend → authenticate via MongoDB, get JWT
+      // 3. Fallback → if backend login fails (legacy Firebase-only account),
+      //               sync with MongoDB and use Firebase ID token
       login: async (email, password) => {
         set({ loading: true, error: null });
 
         try {
-          // Step 1: Use Firebase ONLY to check email verification status
+          // Step 1: Firebase — check email verification status
           const { auth } = await import('../config/firebase');
           const { signInWithEmailAndPassword, signOut } = await import('firebase/auth');
 
+          let firebaseUser = null;
           let emailVerified = false;
+
           try {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            emailVerified = userCredential.user.emailVerified;
-            // Immediately sign out from Firebase — we use backend for auth
-            await signOut(auth);
+            firebaseUser = userCredential.user;
+            emailVerified = firebaseUser.emailVerified;
           } catch (firebaseErr) {
             if (
               firebaseErr.code === 'auth/user-not-found' ||
               firebaseErr.code === 'auth/invalid-credential' ||
               firebaseErr.code === 'auth/wrong-password'
             ) {
-              // Wrong credentials — fail early
               set({ error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة', loading: false });
               return { success: false };
             }
-            // Firebase network/unknown error — skip verification check, proceed to backend
+            // Network/unknown Firebase error — proceed to backend directly
             console.warn('[AuthStore] Firebase check skipped:', firebaseErr.message);
-            emailVerified = true; // optimistic: let backend decide
+            emailVerified = true;
           }
 
           if (!emailVerified) {
+            if (firebaseUser) await signOut(auth);
             set({ error: 'يرجى تفعيل بريدك الإلكتروني أولاً', loading: false });
             return { success: false, notVerified: true };
           }
 
-          // Step 2: Authenticate via MongoDB backend → get JWT + user data
-          const loginRes = await axios.post(`${API_ROUTES.AUTH}/login`, { email, password });
-          const { token, ...userData } = loginRes.data;
+          // Step 2: Try MongoDB backend login (new accounts with password hash)
+          try {
+            const loginRes = await axios.post(`${API_ROUTES.AUTH}/login`, { email, password });
+            const { token, ...userData } = loginRes.data;
 
-          set({
-            user: { ...userData, emailVerified: true },
-            token,
-            loading: false,
-          });
-          return { success: true };
+            // Sign out Firebase — MongoDB JWT takes over
+            if (firebaseUser) await signOut(auth).catch(() => {});
+
+            set({ user: { ...userData, emailVerified: true }, token, loading: false });
+            return { success: true };
+
+          } catch (backendErr) {
+            // Step 3: Fallback for legacy Firebase-only accounts (no password in MongoDB)
+            // Use Firebase ID token + sync to get/create MongoDB user record
+            console.warn('[AuthStore] Backend login failed, trying legacy Firebase sync:', backendErr.message);
+
+            if (!firebaseUser) {
+              set({ error: 'فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.', loading: false });
+              return { success: false };
+            }
+
+            const firebaseToken = await firebaseUser.getIdToken(true);
+
+            let syncedUser = {
+              email: firebaseUser.email,
+              fullName: firebaseUser.displayName || firebaseUser.email.split('@')[0],
+              plan: 'free',
+              emailVerified: true,
+            };
+
+            try {
+              const syncRes = await axios.post(`${API_ROUTES.AUTH}/sync`, {
+                firebaseUID: firebaseUser.uid,
+                email: firebaseUser.email,
+                fullName: firebaseUser.displayName || firebaseUser.email.split('@')[0],
+              });
+              syncedUser = { ...syncRes.data.user, emailVerified: true };
+            } catch (syncErr) {
+              console.warn('[AuthStore] Sync also failed, using Firebase data only:', syncErr.message);
+            }
+
+            // Sign out Firebase — we store Firebase token in state
+            await signOut(auth).catch(() => {});
+
+            set({ user: syncedUser, token: firebaseToken, loading: false });
+            return { success: true };
+          }
 
         } catch (err) {
           const msg = err.response?.data?.error || err.message || 'Login failed';
@@ -74,16 +116,16 @@ const useAuthStore = create(
       },
 
       // ── REGISTER ──────────────────────────────────────────────
-      // 1. Backend → create account in MongoDB
-      // 2. Firebase → create account ONLY to send verification email, then sign out
+      // 1. Backend → create account in MongoDB (stores password hash)
+      // 2. Firebase → create account ONLY to send verification email
       register: async (fullName, email, password) => {
         set({ loading: true, error: null });
 
         try {
-          // Step 1: Create account in MongoDB backend
+          // Step 1: Create account in MongoDB backend (password hashed)
           await axios.post(`${API_ROUTES.AUTH}/register`, { fullName, email, password });
 
-          // Step 2: Create Firebase account ONLY for sending verification email
+          // Step 2: Firebase — create account just to send verification email
           const { auth } = await import('../config/firebase');
           const {
             createUserWithEmailAndPassword,
@@ -96,11 +138,9 @@ const useAuthStore = create(
             const firebaseUser = userCredential.user;
             await updateProfile(firebaseUser, { displayName: fullName });
             await sendEmailVerification(firebaseUser);
-            // Keep Firebase session alive so VerifyEmail page can poll
-            console.log('[AuthStore] ✅ Verification email sent via Firebase');
+            console.log('[AuthStore] ✅ Verification email sent');
           } catch (firebaseErr) {
-            console.warn('[AuthStore] Firebase email verification setup failed:', firebaseErr.message);
-            // Still succeed — user is in MongoDB, they can login once verified manually
+            console.warn('[AuthStore] Firebase verification setup failed:', firebaseErr.message);
           }
 
           set({ loading: false, error: null });
@@ -108,11 +148,11 @@ const useAuthStore = create(
 
         } catch (err) {
           let errorMsg = err.response?.data?.error || err.message || 'Registration failed';
-          if (err.code === 'auth/email-already-in-use' || errorMsg.toLowerCase().includes('already')) {
+          if (errorMsg.toLowerCase().includes('already') || err.code === 'auth/email-already-in-use') {
             errorMsg = 'هذا البريد الإلكتروني مسجل بالفعل. يرجى تسجيل الدخول.';
-          } else if (err.code === 'auth/weak-password' || errorMsg.toLowerCase().includes('password')) {
+          } else if (errorMsg.toLowerCase().includes('password') || err.code === 'auth/weak-password') {
             errorMsg = 'كلمة المرور ضعيفة. يجب أن تكون 8 أحرف على الأقل.';
-          } else if (err.code === 'auth/invalid-email' || errorMsg.toLowerCase().includes('email')) {
+          } else if (errorMsg.toLowerCase().includes('email') || err.code === 'auth/invalid-email') {
             errorMsg = 'البريد الإلكتروني غير صالح.';
           }
           set({ error: errorMsg, loading: false });
@@ -144,7 +184,7 @@ const useAuthStore = create(
         set((state) => ({
           user: state.user ? { ...state.user, ...data } : null,
         }));
-        console.log('[AuthStore] 🔄 State synced with real-time data:', data);
+        console.log('[AuthStore] 🔄 State synced:', data);
       },
 
       getAuthHeader: () => {
