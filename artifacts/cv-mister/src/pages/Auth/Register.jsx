@@ -55,7 +55,7 @@ export default function Register() {
   }, [formData]);
 
   const rules = {
-    minLength: formData.password.length >= 6,
+    minLength: formData.password.length >= 8,
     hasLetter: /[a-zA-Z]/.test(formData.password),
     matches: formData.password === formData.confirmPassword && formData.confirmPassword.length > 0,
   };
@@ -69,8 +69,8 @@ export default function Register() {
     if (!passwordValid) {
       return toast.error(
         language === 'ar'
-          ? 'كلمة المرور يجب أن تكون 6 أحرف على الأقل وتحتوي على حرف واحد'
-          : 'Password must be at least 6 characters and contain a letter'
+          ? 'كلمة المرور يجب أن تكون 8 أحرف على الأقل وتحتوي على حرف واحد'
+          : 'Password must be at least 8 characters and contain a letter'
       );
     }
 
@@ -82,7 +82,7 @@ export default function Register() {
 
     if (success) {
       clearDraft();
-      navigate('/verify-email', { state: { email: formData.email }, replace: true });
+      navigate('/verify-email', { state: { email: formData.email, password: formData.password }, replace: true });
     } else {
       const storeError = useAuthStore.getState().error;
 
@@ -155,7 +155,7 @@ export default function Register() {
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               onBlur={() => setTouched(t => ({ ...t, password: true }))}
               required
-              minLength={6}
+              minLength={8}
               autoComplete="new-password"
               style={{ paddingInlineEnd: '44px' }}
             />
@@ -174,7 +174,7 @@ export default function Register() {
 
           {(touched.password || formData.password.length > 0) && (
             <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <RuleItem ok={rules.minLength} label={language === 'ar' ? '6 أحرف على الأقل' : 'At least 6 characters'} />
+              <RuleItem ok={rules.minLength} label={language === 'ar' ? '8 أحرف على الأقل' : 'At least 8 characters'} />
               <RuleItem ok={rules.hasLetter} label={language === 'ar' ? 'يحتوي على حرف واحد على الأقل' : 'Contains at least one letter'} />
             </div>
           )}

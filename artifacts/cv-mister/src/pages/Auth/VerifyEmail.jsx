@@ -21,9 +21,7 @@ export default function VerifyEmail() {
     '';
 
   useEffect(() => {
-    let interval;
-
-    interval = setInterval(async () => {
+    const interval = setInterval(async () => {
       try {
         if (!auth.currentUser) return;
 
@@ -32,19 +30,27 @@ export default function VerifyEmail() {
         if (auth.currentUser.emailVerified) {
           clearInterval(interval);
 
-          const freshToken = await auth.currentUser.getIdToken(true);
+          // Email verified via Firebase — now login via MongoDB backend to get JWT
+          const email = auth.currentUser.email;
+          const password = location.state?.password;
 
           let userData = null;
-          try {
-            const syncRes = await axios.post(`${API_ROUTES.AUTH}/sync`, {
-              firebaseUID: auth.currentUser.uid,
-              email: auth.currentUser.email,
-              fullName: auth.currentUser.displayName || registeredEmail.split('@')[0],
-            });
-            userData = syncRes.data?.user || null;
-          } catch {
+          let token = null;
+
+          if (password) {
+            try {
+              const loginRes = await axios.post(`${API_ROUTES.AUTH}/login`, { email, password });
+              token = loginRes.data.token;
+              const { token: _t, ...rest } = loginRes.data;
+              userData = { ...rest, emailVerified: true };
+            } catch (loginErr) {
+              console.warn('[VerifyEmail] Backend login failed after verification:', loginErr.message);
+            }
+          }
+
+          // Fallback: use Firebase user data if backend login failed
+          if (!userData) {
             userData = {
-              firebaseUID: auth.currentUser.uid,
               email: auth.currentUser.email,
               fullName: auth.currentUser.displayName || registeredEmail.split('@')[0],
               plan: 'free',
@@ -52,10 +58,13 @@ export default function VerifyEmail() {
             };
           }
 
-          useAuthStore.setState({
-            user: { ...(userData || {}), emailVerified: true },
-            token: freshToken,
-          });
+          // Sign out Firebase — backend JWT takes over
+          try {
+            const { signOut } = await import('firebase/auth');
+            await signOut(auth);
+          } catch {}
+
+          useAuthStore.setState({ user: userData, token });
 
           toast.success(
             language === 'ar'
@@ -71,7 +80,7 @@ export default function VerifyEmail() {
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [language, navigate, registeredEmail]);
+  }, [language, navigate, registeredEmail, location.state?.password]);
 
   const handleResend = async () => {
     setResending(true);
@@ -91,7 +100,7 @@ export default function VerifyEmail() {
             : 'Session not found. Please register again.'
         );
       }
-    } catch (err) {
+    } catch {
       toast.error(
         language === 'ar'
           ? 'فشل إعادة الإرسال. حاول مرة أخرى.'

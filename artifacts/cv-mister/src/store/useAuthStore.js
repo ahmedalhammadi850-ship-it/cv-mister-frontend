@@ -1,6 +1,8 @@
 // ============================================================
 // CV-Mister — Auth Store (Zustand)
-// Manages user session, JWT, and auth states
+// Architecture:
+//   - Firebase: ONLY for email verification (send + check)
+//   - MongoDB (backend): account creation, login, JWT, user data
 // ============================================================
 
 import { create } from 'zustand';
@@ -16,115 +18,102 @@ const useAuthStore = create(
       loading: false,
       error: null,
 
+      // ── LOGIN ─────────────────────────────────────────────────
+      // 1. Firebase → check emailVerified only
+      // 2. Backend → authenticate via MongoDB, get JWT
       login: async (email, password) => {
         set({ loading: true, error: null });
 
         try {
+          // Step 1: Use Firebase ONLY to check email verification status
           const { auth } = await import('../config/firebase');
           const { signInWithEmailAndPassword, signOut } = await import('firebase/auth');
-          
-          const userCredential = await signInWithEmailAndPassword(auth, email, password);
-          const firebaseUser = userCredential.user;
 
-          // Mandatory Check: Email Verification
-          if (!firebaseUser.emailVerified) {
+          let emailVerified = false;
+          try {
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            emailVerified = userCredential.user.emailVerified;
+            // Immediately sign out from Firebase — we use backend for auth
             await signOut(auth);
-            set({ error: 'يرجى تفعيل بريدك الإلكتروني أولاً. تحقق من صندوق الوارد.', loading: false });
+          } catch (firebaseErr) {
+            if (
+              firebaseErr.code === 'auth/user-not-found' ||
+              firebaseErr.code === 'auth/invalid-credential' ||
+              firebaseErr.code === 'auth/wrong-password'
+            ) {
+              // Wrong credentials — fail early
+              set({ error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة', loading: false });
+              return { success: false };
+            }
+            // Firebase network/unknown error — skip verification check, proceed to backend
+            console.warn('[AuthStore] Firebase check skipped:', firebaseErr.message);
+            emailVerified = true; // optimistic: let backend decide
+          }
+
+          if (!emailVerified) {
+            set({ error: 'يرجى تفعيل بريدك الإلكتروني أولاً', loading: false });
             return { success: false, notVerified: true };
           }
 
-          // Force refresh the token so it includes email_verified=true
-          const token = await firebaseUser.getIdToken(true);
+          // Step 2: Authenticate via MongoDB backend → get JWT + user data
+          const loginRes = await axios.post(`${API_ROUTES.AUTH}/login`, { email, password });
+          const { token, ...userData } = loginRes.data;
 
-          // Sync with our backend to get custom user data and DB ID
-          let backendUser = {
-            firebaseUID: firebaseUser.uid,
-            email: firebaseUser.email,
-            fullName: firebaseUser.displayName || 'User',
-            emailVerified: true,
-          };
-          try {
-            const syncRes = await axios.post(`${API_ROUTES.AUTH}/sync`, {
-              firebaseUID: firebaseUser.uid,
-              email: firebaseUser.email,
-              fullName: firebaseUser.displayName || 'User'
-            });
-            backendUser = { ...syncRes.data.user, emailVerified: true };
-          } catch (syncErr) {
-            console.warn('[AuthStore] Backend sync failed, using Firebase data only:', syncErr.message);
-          }
-          
-          set({ 
-            user: backendUser, 
-            token: token, 
-            loading: false 
+          set({
+            user: { ...userData, emailVerified: true },
+            token,
+            loading: false,
           });
           return { success: true };
+
         } catch (err) {
-          let errorMsg = 'Login failed';
-          if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-            errorMsg = 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
-          }
-          set({ error: errorMsg, loading: false });
+          const msg = err.response?.data?.error || err.message || 'Login failed';
+          set({ error: msg, loading: false });
           return { success: false };
         }
       },
 
+      // ── REGISTER ──────────────────────────────────────────────
+      // 1. Backend → create account in MongoDB
+      // 2. Firebase → create account ONLY to send verification email, then sign out
       register: async (fullName, email, password) => {
         set({ loading: true, error: null });
+
         try {
+          // Step 1: Create account in MongoDB backend
+          await axios.post(`${API_ROUTES.AUTH}/register`, { fullName, email, password });
+
+          // Step 2: Create Firebase account ONLY for sending verification email
           const { auth } = await import('../config/firebase');
-          const { createUserWithEmailAndPassword, sendEmailVerification, updateProfile } = await import('firebase/auth');
-          
-          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-          const firebaseUser = userCredential.user;
+          const {
+            createUserWithEmailAndPassword,
+            sendEmailVerification,
+            updateProfile,
+          } = await import('firebase/auth');
 
-          console.log(`[Firebase Auth] Account created for: ${firebaseUser.email}`);
-
-          // PRIORITY: Send email immediately while session is freshest
-          console.log(`[Firebase Auth] Attempting to send verification email...`);
           try {
-            // Using auth.currentUser to ensure we use the active authenticated session
-            await sendEmailVerification(auth.currentUser);
-            console.log(`[Firebase Auth] ✅ Verification email sent successfully to ${firebaseUser.email}`);
-          } catch (verifyErr) {
-            console.error(`[Firebase Auth] ❌ Failed to send verification email:`, verifyErr.message);
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const firebaseUser = userCredential.user;
+            await updateProfile(firebaseUser, { displayName: fullName });
+            await sendEmailVerification(firebaseUser);
+            // Keep Firebase session alive so VerifyEmail page can poll
+            console.log('[AuthStore] ✅ Verification email sent via Firebase');
+          } catch (firebaseErr) {
+            console.warn('[AuthStore] Firebase email verification setup failed:', firebaseErr.message);
+            // Still succeed — user is in MongoDB, they can login once verified manually
           }
 
-          // Then update the name
-          await updateProfile(firebaseUser, { displayName: fullName });
-
-          // Sync with our backend
-          const syncRes = await axios.post(`${API_ROUTES.AUTH}/sync`, {
-            firebaseUID: firebaseUser.uid,
-            email: firebaseUser.email,
-            fullName: fullName
-          });
-
-          // UPDATE: Instead of immediate sign out, we keep the user object in state 
-          // but marked as unverified so the UI can poll for status change.
-          const token = await firebaseUser.getIdToken();
-          set({ 
-            user: { 
-              ...syncRes.data.user,
-              firebaseUID: firebaseUser.uid, 
-              emailVerified: false 
-            }, 
-            token, 
-            loading: false 
-          });
-          
+          set({ loading: false, error: null });
           return true;
+
         } catch (err) {
-          let errorMsg = err.message;
-          if (err.code === 'auth/email-already-in-use') {
-            errorMsg = 'هذا البريد الإلكتروني مسجل بالفعل. يرجى تسجيل الدخول بدلاً من ذلك.';
-          } else if (err.code === 'auth/weak-password') {
-            errorMsg = 'كلمة المرور ضعيفة جداً. يجب أن تكون 6 أحرف على الأقل.';
-          } else if (err.code === 'auth/invalid-email') {
-            errorMsg = 'البريد الإلكتروني غير صالح. يرجى التحقق من الصيغة.';
-          } else if (err.code === 'auth/too-many-requests') {
-            errorMsg = 'تم تجاوز عدد المحاولات المسموحة. يرجى المحاولة لاحقاً.';
+          let errorMsg = err.response?.data?.error || err.message || 'Registration failed';
+          if (err.code === 'auth/email-already-in-use' || errorMsg.toLowerCase().includes('already')) {
+            errorMsg = 'هذا البريد الإلكتروني مسجل بالفعل. يرجى تسجيل الدخول.';
+          } else if (err.code === 'auth/weak-password' || errorMsg.toLowerCase().includes('password')) {
+            errorMsg = 'كلمة المرور ضعيفة. يجب أن تكون 8 أحرف على الأقل.';
+          } else if (err.code === 'auth/invalid-email' || errorMsg.toLowerCase().includes('email')) {
+            errorMsg = 'البريد الإلكتروني غير صالح.';
           }
           set({ error: errorMsg, loading: false });
           return false;
@@ -140,7 +129,7 @@ const useAuthStore = create(
         try {
           const token = get().token;
           const res = await axios.put(`${API_ROUTES.AUTH}/profile`, data, {
-            headers: { Authorization: `Bearer ${token}` }
+            headers: { Authorization: `Bearer ${token}` },
           });
           set({ user: res.data, loading: false });
           return true;
@@ -150,11 +139,10 @@ const useAuthStore = create(
         }
       },
 
-      // ── New: Sync state directly from Socket.IO ───────────────
       syncLocalUser: (data) => {
         if (!data) return;
         set((state) => ({
-          user: state.user ? { ...state.user, ...data } : null
+          user: state.user ? { ...state.user, ...data } : null,
         }));
         console.log('[AuthStore] 🔄 State synced with real-time data:', data);
       },
@@ -162,7 +150,7 @@ const useAuthStore = create(
       getAuthHeader: () => {
         const token = get().token;
         return token ? { Authorization: `Bearer ${token}` } : {};
-      }
+      },
     }),
     { name: 'cv-mister-auth' }
   )
