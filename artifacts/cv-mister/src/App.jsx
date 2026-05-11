@@ -27,6 +27,7 @@ import PrintPage from './pages/PrintPage';
 
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
+import VerifyEmail from './pages/Auth/VerifyEmail';
 import ForgotPassword from './pages/Auth/ForgotPassword';
 import ResetPassword from './pages/Auth/ResetPassword';
 
@@ -142,6 +143,7 @@ function AppContent() {
             {/* Auth Routes (Redirect to dashboard only if fully verified) */}
             <Route path="/login" element={(!user || !user.emailVerified) ? <Login /> : <Navigate to="/dashboard" />} />
             <Route path="/register" element={(!user || !user.emailVerified) ? <Register /> : <Navigate to="/dashboard" />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password/:token" element={<ResetPassword />} />
             
