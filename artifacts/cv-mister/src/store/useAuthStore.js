@@ -98,6 +98,13 @@ const useAuthStore = create(
             return { success: false };
           }
 
+          // Legacy account: no password hash in MongoDB (created via old Firebase-only flow)
+          // bcrypt.compare(password, undefined) → "Illegal arguments: string, undefined"
+          if (status === 500 && msg.toLowerCase().includes('illegal arguments')) {
+            set({ error: 'NO_PASSWORD_HASH', loading: false });
+            return { success: false, noPasswordHash: true };
+          }
+
           // Backend unreachable or legacy account (no password hash in MongoDB)
           // Fallback: try Firebase sign-in + sync to get user data
           console.warn('[AuthStore] Backend login failed, trying Firebase fallback:', msg);
