@@ -20,13 +20,20 @@ const useAuthStore = create(
       error: null,
 
       // ── WAKE UP BACKEND ───────────────────────────────────────
-      // Call this on app load to pre-warm the Render server before login
+      // Pings the server on app load to pre-warm Render's free tier
       wakeUpBackend: async () => {
-        try {
-          await axios.get(`${API_ROUTES.AUTH}/ping`, { timeout: 30000 });
-        } catch {
-          // Ignore — just waking up the server
+        const MAX = 10;
+        const DELAY = 5000;
+        for (let i = 1; i <= MAX; i++) {
+          try {
+            await axios.get(`${API_ROUTES.AUTH}/ping`, { timeout: 15000 });
+            console.log('[AuthStore] ✅ Backend is awake');
+            return;
+          } catch {
+            if (i < MAX) await new Promise(r => setTimeout(r, DELAY));
+          }
         }
+        console.warn('[AuthStore] ⚠️ Backend ping timed out after retries');
       },
 
       // ── LOGIN ─────────────────────────────────────────────────
@@ -37,14 +44,15 @@ const useAuthStore = create(
         set({ loading: true, error: null });
 
         // Helper: attempt backend login with retry on 502/503 (cold start)
+        // Render free tier can take up to 50s to wake — 10 retries × 5s = 50s max
         const attemptBackendLogin = async () => {
-          const MAX_RETRIES = 3;
-          const RETRY_DELAY = 4000; // 4 seconds between retries
+          const MAX_RETRIES = 10;
+          const RETRY_DELAY = 5000;
           let lastErr = null;
 
           for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
             try {
-              return await axios.post(`${API_ROUTES.AUTH}/login`, { email, password }, { timeout: 20000 });
+              return await axios.post(`${API_ROUTES.AUTH}/login`, { email, password }, { timeout: 15000 });
             } catch (err) {
               const status = err.response?.status;
               const msg = err.response?.data?.error || '';
