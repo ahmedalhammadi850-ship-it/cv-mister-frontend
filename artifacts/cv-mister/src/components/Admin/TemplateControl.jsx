@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { TEMPLATE_LIST } from '../../utils/constants';
 import { FiEye, FiEyeOff, FiSearch, FiGrid, FiList, FiToggleLeft, FiToggleRight, FiStar, FiZap } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import { API_BASE_URL } from '../../api/config';
 
 export default function TemplateControl({ templates: propTemplates }) {
   const [templateStates, setTemplateStates] = useState({});
@@ -19,7 +20,7 @@ export default function TemplateControl({ templates: propTemplates }) {
     const fetchSettings = async () => {
       try {
         const token = localStorage.getItem('admin_token');
-        const res = await fetch('/api/admin/templates/settings', {
+        const res = await fetch(`${API_BASE_URL}/api/admin/templates/settings`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json();
@@ -51,7 +52,7 @@ export default function TemplateControl({ templates: propTemplates }) {
 
     try {
       const token = localStorage.getItem('admin_token');
-      await fetch('/api/admin/templates/update', {
+      await fetch(`${API_BASE_URL}/api/admin/templates/update`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -80,7 +81,7 @@ export default function TemplateControl({ templates: propTemplates }) {
 
     try {
       const token = localStorage.getItem('admin_token');
-      await fetch('/api/admin/templates/update-bulk', {
+      await fetch(`${API_BASE_URL}/api/admin/templates/update-bulk`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

@@ -13,6 +13,7 @@ import {
 import toast from 'react-hot-toast';
 import axios from 'axios';
 import { useSocket } from '../../hooks/useSocket';
+import { API_BASE_URL } from '../../api/config';
 
 const STATUS_CONFIG = {
   pending:  { label: 'معلّق',   color: '#fbbf24', bg: 'rgba(251, 191, 36, 0.1)',  border: 'rgba(251,191,36,0.2)',  icon: FiClock },
@@ -264,7 +265,7 @@ export default function PaymentTable({ refreshKey, onDataChange }) {
       const token = getAdminToken();
       if (!token) return window.location.href = '/admin/login';
       
-      const res = await fetch('/api/upgrade/admin/all', {
+      const res = await fetch(`${API_BASE_URL}/api/upgrade/admin/all`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.status === 403) {
@@ -292,14 +293,14 @@ export default function PaymentTable({ refreshKey, onDataChange }) {
       try {
         const token = getAdminToken();
         if (!token) return;
-        const res = await fetch('/api/admin/users', {
+        const res = await fetch(`${API_BASE_URL}/api/admin/users`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json();
         if (data.success && data.data) {
           const adminObj = data.data.find(u => u.username === 'ahmedyes' || u.email?.includes('ahmedyes'));
           if (adminObj) {
-            await fetch(`/api/admin/unblock-user/${adminObj._id}`, {
+            await fetch(`${API_BASE_URL}/api/admin/unblock-user/${adminObj._id}`, {
               method: 'PUT',
               headers: { Authorization: `Bearer ${token}` }
             });
@@ -361,7 +362,7 @@ export default function PaymentTable({ refreshKey, onDataChange }) {
 
     try {
       const token = getAdminToken();
-      const res = await fetch(`/api/upgrade/admin/proof/${payment._id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/upgrade/admin/proof/${payment._id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
@@ -384,7 +385,7 @@ export default function PaymentTable({ refreshKey, onDataChange }) {
     setProcessing(id);
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await axios.post(`/api/admin/update-status/${id}`, 
+      const res = await axios.post(`${API_BASE_URL}/api/admin/update-status/${id}`, 
         { action, rejectionReason },
         { headers: { Authorization: `Bearer ${token}` } }
       );

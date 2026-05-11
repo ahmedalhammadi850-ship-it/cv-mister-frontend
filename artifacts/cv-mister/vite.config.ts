@@ -69,6 +69,14 @@ export default defineConfig({
       strict: true,
     },
     proxy: {
+      '/api': {
+        target: BACKEND,
+        changeOrigin: true,
+      },
+      '/generate-pdf': {
+        target: BACKEND,
+        changeOrigin: true,
+      },
       '/socket.io': {
         target: BACKEND,
         ws: true,

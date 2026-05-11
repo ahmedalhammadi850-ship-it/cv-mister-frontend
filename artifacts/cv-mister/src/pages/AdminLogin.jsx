@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FiLock, FiUser, FiZap, FiShield } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import axios from 'axios';
+import { API_BASE_URL } from '../api/config';
 
 // ============================================================
 // Simulate Inertia.js useForm hook for React Router environment
@@ -19,7 +20,7 @@ const useForm = (initialValues) => {
     
     try {
       // Direct call to the new backend endpoint
-      const res = await axios.post('/api/admin/login', data);
+      const res = await axios.post(`${API_BASE_URL}/api/admin/login`, data);
       
       if (res.data.success && res.data.token) {
         localStorage.setItem('admin_token', res.data.token);
@@ -43,8 +44,8 @@ const useForm = (initialValues) => {
 
 export default function AdminLogin() {
   const { data, setData, post, processing, errors } = useForm({
-    username: 'ahmedyes',
-    password: 'alhammadiahmed',
+    username: '',
+    password: '',
   });
 
   const handleSubmit = async (e) => {

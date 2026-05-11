@@ -10,7 +10,7 @@ import {
 } from 'react-icons/fi';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { API_ROUTES } from '../../api/config';
+import { API_ROUTES, API_BASE_URL } from '../../api/config';
 
 const ITEMS_PER_PAGE = 8;
 
@@ -58,7 +58,7 @@ export default function MessagesTable() {
   const handleMarkAsRead = async (id) => {
     try {
       const token = localStorage.getItem('admin_token');
-      await axios.put(`/api/admin/messages/${id}/read`, {}, {
+      await axios.put(`${API_BASE_URL}/api/admin/messages/${id}/read`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setMessages(prev => prev.map(m => m._id === id ? { ...m, status: 'read' } : m));
@@ -71,7 +71,7 @@ export default function MessagesTable() {
     if (!window.confirm('هل أنت متأكد من حذف هذه الرسالة؟')) return;
     try {
       const token = localStorage.getItem('admin_token');
-      await axios.delete(`/api/admin/messages/${id}`, {
+      await axios.delete(`${API_BASE_URL}/api/admin/messages/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setMessages(prev => prev.filter(m => m._id !== id));

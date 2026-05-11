@@ -11,6 +11,7 @@ import {
 } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import axios from 'axios';
+import { API_BASE_URL } from '../../api/config';
 
 const MOCK_USERS = [
   { id: 1, name: 'أحمد محمد علي',    email: 'ahmed@gmail.com',   plan: 'pro',  status: 'active',   joined: '2026-03-15', resumes: 5  },
@@ -336,7 +337,7 @@ export default function UsersTable({ users: propUsers, refreshKey, onDataChange 
       setLoadingUsers(true);
       try {
         const token = localStorage.getItem('admin_token');
-        const res = await axios.get('/api/admin/users', {
+        const res = await axios.get(`${API_BASE_URL}/api/admin/users`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (res.data.success) {
@@ -362,12 +363,12 @@ export default function UsersTable({ users: propUsers, refreshKey, onDataChange 
       
       if (newPlan === 'free') {
         // Using PUT for deactivation as registered in the admin router
-        res = await axios.put(`/api/admin/deactivate-pro/${userId}`, {}, {
+        res = await axios.put(`${API_BASE_URL}/api/admin/deactivate-pro/${userId}`, {}, {
           headers: { Authorization: `Bearer ${token}` }
         });
       } else {
         // Using unified endpoint for activation: /api/admin/update-status/:id
-        res = await axios.post(`/api/admin/update-status/${userId}`, 
+        res = await axios.post(`${API_BASE_URL}/api/admin/update-status/${userId}`, 
           { action: 'activate', plan: newPlan }, 
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -413,7 +414,7 @@ export default function UsersTable({ users: propUsers, refreshKey, onDataChange 
   const handleUpdateSubscription = useCallback(async (userId, updates) => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await axios.put(`/api/admin/users/${userId}/subscription`, updates, {
+      const res = await axios.put(`${API_BASE_URL}/api/admin/users/${userId}/subscription`, updates, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.data.success) {
@@ -430,7 +431,7 @@ export default function UsersTable({ users: propUsers, refreshKey, onDataChange 
     setUpgrading(true);
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await axios.post('/api/admin/free-upgrade', 
+      const res = await axios.post(`${API_BASE_URL}/api/admin/free-upgrade`, 
         { email: freeUpgradeEmail },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -463,7 +464,7 @@ export default function UsersTable({ users: propUsers, refreshKey, onDataChange 
     setLoadingUserId(userId);
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await axios.delete(`/api/admin/users/${userId}`, {
+      const res = await axios.delete(`${API_BASE_URL}/api/admin/users/${userId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.data.success) {
@@ -484,7 +485,7 @@ export default function UsersTable({ users: propUsers, refreshKey, onDataChange 
     setLoadingUserId(userId);
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await axios.put(`/api/admin/users/status/${userId}`, { status: newStatus }, {
+      const res = await axios.put(`${API_BASE_URL}/api/admin/users/status/${userId}`, { status: newStatus }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.data.success) {

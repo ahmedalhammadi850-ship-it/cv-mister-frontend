@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FiSave, FiRefreshCw, FiDollarSign, FiZap, FiCheckCircle } from 'react-icons/fi';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { API_BASE_URL } from '../../api/config';
 
 export default function PricingControl() {
   const [pricing, setPricing] = useState({
@@ -18,7 +19,7 @@ export default function PricingControl() {
   const fetchPricing = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('/api/content');
+      const res = await axios.get(`${API_BASE_URL}/api/content`);
       if (res.data.success && res.data.settings?.pricing) {
         setPricing(res.data.settings.pricing);
       }
@@ -33,7 +34,7 @@ export default function PricingControl() {
     setSaving(true);
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await axios.post('/api/admin/pricing/update', { pricing }, {
+      const res = await axios.post(`${API_BASE_URL}/api/admin/pricing/update`, { pricing }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.data.success) {

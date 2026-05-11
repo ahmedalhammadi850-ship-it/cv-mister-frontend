@@ -18,6 +18,7 @@ import {
   FiGlobe, FiDatabase, FiServer, FiSearch, FiMaximize2,
   FiMoon, FiSun, FiZap, FiRefreshCw, FiMail, FiMenu
 } from 'react-icons/fi';
+import { API_BASE_URL } from '../api/config';
 
 // ── Settings Panel ──────────────────────────────────────────
 function SettingsPanel() {
@@ -41,7 +42,7 @@ function SettingsPanel() {
     const fetchSettings = async () => {
       try {
         const token = localStorage.getItem('admin_token');
-        const res = await fetch('/api/admin/settings', {
+        const res = await fetch(`${API_BASE_URL}/api/admin/settings`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json();
@@ -63,7 +64,7 @@ function SettingsPanel() {
     setIsSaving(true);
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch('/api/admin/settings', {
+      const res = await fetch(`${API_BASE_URL}/api/admin/settings`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -610,7 +611,7 @@ export default function AdminDashboard({ stats, payments, users, templates }) {
         }
         
         // Fetch users to find ahmedyes ID
-        const res = await fetch('/api/admin/users', {
+        const res = await fetch(`${API_BASE_URL}/api/admin/users`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -623,7 +624,7 @@ export default function AdminDashboard({ stats, payments, users, templates }) {
         if (data.success && data.data) {
           const adminObj = data.data.find(u => u.username === 'ahmedyes' || u.email?.includes('ahmedyes'));
           if (adminObj) {
-            await fetch(`/api/admin/unblock-user/${adminObj._id}`, {
+            await fetch(`${API_BASE_URL}/api/admin/unblock-user/${adminObj._id}`, {
               method: 'PUT',
               headers: { Authorization: `Bearer ${token}` }
             });
@@ -650,7 +651,7 @@ export default function AdminDashboard({ stats, payments, users, templates }) {
       try {
         const token = localStorage.getItem('admin_token');
         if (!token) return;
-        const res = await fetch('/api/admin/dashboard', {
+        const res = await fetch(`${API_BASE_URL}/api/admin/dashboard`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json();

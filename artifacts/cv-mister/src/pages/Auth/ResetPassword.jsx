@@ -8,6 +8,7 @@ import AuthLayout from '../../components/Layout/AuthLayout';
 import useStyleStore from '../../store/useStyleStore';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { API_BASE_URL } from '../../api/config';
 
 export default function ResetPassword() {
   const { token } = useParams();
@@ -24,7 +25,7 @@ export default function ResetPassword() {
     }
     setLoading(true);
     try {
-      await axios.post(`/api/auth/reset-password/${token}`, { password });
+      await axios.post(`${API_BASE_URL}/api/auth/reset-password/${token}`, { password });
       toast.success(language === 'ar' ? 'تم تغيير كلمة المرور' : 'Password reset successful');
       navigate('/login');
     } catch (err) {
