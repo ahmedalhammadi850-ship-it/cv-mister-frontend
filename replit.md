@@ -1,44 +1,59 @@
-# [Project name]
+# CV-Mister
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A professional resume builder SaaS with AI assistance, bilingual (Arabic + English) support, and pixel-perfect A4 PDF export.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/cv-mister run dev` — run the frontend (port assigned by workflow)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- Frontend: React 19 + Vite 7 + Tailwind CSS v4
+- State: Zustand
+- Router: React Router DOM v7
+- Auth: Firebase Auth + JWT (custom backend)
+- Real-time: Socket.IO client
+- Backend: External — https://cv-mister-backend-coly.onrender.com
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/cv-mister/` — frontend app
+- `artifacts/cv-mister/src/pages/` — page components (Landing, Dashboard, ResumeBuilder, etc.)
+- `artifacts/cv-mister/src/components/` — shared UI components
+- `artifacts/cv-mister/src/store/` — Zustand stores (auth, resume, style, theme, CMS)
+- `artifacts/cv-mister/src/api/config.js` — centralized API URL config (points to production backend)
+- `artifacts/cv-mister/src/config/firebase.js` — Firebase config for auth
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- App uses an external Express backend hosted on Render (`cv-mister-backend-coly.onrender.com`) — no local backend.
+- Firebase handles Google OAuth; the backend issues JWT tokens for session management.
+- All API URLs are centralized in `src/api/config.js`.
+- CSS variables are used for theming (light/dark mode) — Tailwind classes used sparingly alongside custom CSS classes.
+- RTL/LTR is controlled by the `language` Zustand store and applied via `dir` attribute on the root div.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Landing page, About, Pricing, Contact
+- Auth: Login, Register, Forgot/Reset Password (Firebase + JWT)
+- Dashboard: user's saved resumes and cover letters
+- Resume Builder: drag-and-drop, 10+ templates, bilingual support, A4 PDF export
+- Cover Letter Builder
+- Admin Dashboard (admin-only)
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+_Populate as you build._
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- The backend is external (Render). If it's cold-started, first requests may be slow.
+- Socket.IO connects to the backend for real-time plan updates.
+- Firebase config is hardcoded in `src/config/firebase.js` (public config, safe to commit).
+- `@ts-ignore` is used on JSX file imports since the codebase uses `.jsx` not `.tsx`.
 
 ## Pointers
 

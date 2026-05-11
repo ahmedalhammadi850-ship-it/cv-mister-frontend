@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="CV-Mister — Professional Resume Builder SaaS. Create stunning resumes with AI, 10+ templates, bilingual support, and pixel-perfect A4 PDF export." />
+    <meta name="keywords" content="resume builder, CV maker, professional resume, PDF export, AI resume, ATS resume" />
+    <title>CV-Mister | Professional Resume Builder</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📄</text></svg>" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- Anti-Refresh Spam Protection System (Client-Side) -->
+    <script>
+      (function() {
+        const REFRESH_LIMIT = 12;
+        const TIME_WINDOW = 60000;
+        const STORAGE_KEY = 'cv_mister_spam_protection';
+
+        try {
+          const now = Date.now();
+          const rawData = localStorage.getItem(STORAGE_KEY);
+          let logs = rawData ? JSON.parse(rawData) : [];
+
+          logs = logs.filter(ts => (now - ts) < TIME_WINDOW);
+          logs.push(now);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+
+          if (logs.length > REFRESH_LIMIT) {
+            const hideStyle = document.createElement('style');
+            hideStyle.innerHTML = 'body { display: none !important; } html { background: #020617 !important; }';
+            document.head.appendChild(hideStyle);
+
+            window.addEventListener('DOMContentLoaded', function() {
+              const warningDiv = document.createElement('div');
+              warningDiv.dir = 'rtl';
+              warningDiv.style.cssText = `
+                position: fixed; inset: 0; z-index: 999999;
+                background: #020617; display: flex; align-items: center; justify-content: center;
+                font-family: 'Inter', system-ui, -apple-system, sans-serif; padding: 20px;
+              `;
+              
+              warningDiv.innerHTML = `
+                <div style="background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(20px); border: 1px solid rgba(239, 68, 68, 0.2); padding: 48px; border-radius: 32px; max-width: 520px; width: 100%; text-align: center; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
+                  <div style="font-size: 64px; margin-bottom: 24px;">⛔</div>
+                  <h1 style="color: #f8fafc; font-size: 26px; font-weight: 800; margin-bottom: 16px; letter-spacing: -0.02em;">تنبيه: حماية من التحديث المتكرر</h1>
+                  <p style="color: #94a3b8; font-size: 16px; line-height: 1.7; margin-bottom: 32px;">
+                    يرجى التباطؤ! لقد قمت بتحديث الصفحة أكثر من 12 مرة في دقيقة واحدة. 
+                    لحماية الموقع من الضغط، تم تقييد وصولك مؤقتاً. يرجى الانتظار لمدة دقيقة.
+                  </p>
+                  <div style="height: 6px; background: rgba(255,255,255,0.05); border-radius: 10px; overflow: hidden; position: relative;">
+                    <div style="position: absolute; top: 0; right: 0; height: 100%; background: linear-gradient(90deg, #ef4444, #f87171); animation: spamCooldown 60s linear forwards;"></div>
+                  </div>
+                  <p style="margin-top: 16px; font-size: 13px; color: #ef4444; font-weight: 600;">سيتم استعادة الوصول تلقائياً بعد انتهاء الوقت</p>
+                </div>
+                <style>
+                  @keyframes spamCooldown { from { width: 100%; } to { width: 0%; } }
+                </style>
+              `;
+              document.documentElement.appendChild(warningDiv);
+              if (document.body) document.body.remove();
+            });
+          }
+        } catch (err) {
+          console.error('Spam Protection Error:', err);
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

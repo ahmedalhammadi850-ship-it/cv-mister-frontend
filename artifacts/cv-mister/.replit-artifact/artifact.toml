@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "CV-Mister"
+version = "1.0.0"
+id = "artifacts/cv-mister"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19556
+
+[services.development]
+run = "pnpm --filter @workspace/cv-mister run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/cv-mister", "run", "build" ]
+publicDir = "artifacts/cv-mister/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19556"
+BASE_PATH = "/"
