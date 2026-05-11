@@ -2,7 +2,7 @@
 // CV-Mister — App.jsx (Production Sync)
 // ============================================================
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
@@ -175,11 +175,51 @@ function AppContent() {
   );
 }
 
+function HydrationGate({ children }) {
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    if (useAuthStore.persist.hasHydrated()) {
+      setHydrated(true);
+    } else {
+      const unsub = useAuthStore.persist.onFinishHydration(() => {
+        setHydrated(true);
+      });
+      return () => unsub();
+    }
+  }, []);
+
+  if (!hydrated) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'var(--bg-base, #0f172a)',
+      }}>
+        <div style={{
+          width: '40px', height: '40px',
+          border: '3px solid rgba(99,102,241,0.2)',
+          borderTop: '3px solid #6366f1',
+          borderRadius: '50%',
+          animation: 'spin 0.8s linear infinite',
+        }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  return children;
+}
+
 export default function App() {
   return (
     <Router>
       <Toaster position="top-center" />
-      <AppContent />
+      <HydrationGate>
+        <AppContent />
+      </HydrationGate>
     </Router>
   );
 }
