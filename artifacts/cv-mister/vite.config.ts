@@ -68,6 +68,9 @@ export default defineConfig({
     fs: {
       strict: true,
     },
+    hmr: process.env.REPL_ID
+      ? { clientPort: 443, protocol: "wss" }
+      : true,
     proxy: {
       '/api': {
         target: BACKEND,

@@ -1,10 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import AuthLayout from '../../components/Layout/AuthLayout';
 import useAuthStore from '../../store/useAuthStore';
 import useStyleStore from '../../store/useStyleStore';
 import toast from 'react-hot-toast';
 import { Loader2, Eye, EyeOff, CheckCircle, XCircle } from 'lucide-react';
+
+const SESSION_KEY = 'cv_register_draft';
+
+function loadDraft() {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function saveDraft(data) {
+  try {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(data));
+  } catch {}
+}
+
+function clearDraft() {
+  try {
+    sessionStorage.removeItem(SESSION_KEY);
+  } catch {}
+}
 
 export default function Register() {
   const navigate = useNavigate();
@@ -13,17 +37,22 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
+  const draft = loadDraft();
   const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
+    fullName: draft?.fullName || '',
+    email: draft?.email || '',
+    password: draft?.password || '',
+    confirmPassword: draft?.confirmPassword || '',
   });
 
   const [touched, setTouched] = useState({
     password: false,
     confirmPassword: false,
   });
+
+  useEffect(() => {
+    saveDraft(formData);
+  }, [formData]);
 
   const rules = {
     minLength: formData.password.length >= 6,
@@ -52,6 +81,7 @@ export default function Register() {
     const success = await register(formData.fullName, formData.email, formData.password);
 
     if (success) {
+      clearDraft();
       navigate('/verify-email', { state: { email: formData.email }, replace: true });
     } else {
       const storeError = useAuthStore.getState().error;
@@ -66,6 +96,7 @@ export default function Register() {
       const currentUser = firebaseAuth.currentUser;
 
       if (isNetworkError && currentUser) {
+        clearDraft();
         navigate('/verify-email', { state: { email: currentUser.email || formData.email }, replace: true });
       } else if (storeError?.includes('مسجل بالفعل') || storeError?.includes('already-in-use')) {
         toast.error(language === 'ar'
