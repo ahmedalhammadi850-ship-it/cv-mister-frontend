@@ -1,15 +1,23 @@
 // ============================================================
 // CV-Mister — Auth Store (Zustand)
 // Architecture:
-//   - Login: Backend MongoDB ONLY (no Firebase dependency)
-//   - Legacy fallback: Firebase sync for accounts without password hash
-//   - Firebase: ONLY used during registration to send verification email
+//   LOGIN:    Backend MongoDB only → JWT token
+//             If backend 500 + "Illegal arguments" → legacy account (no password) → show reset prompt
+//             If backend 502/503 → retry up to 6 times (cold start)
+//             Firebase fallback REMOVED (identitytoolkit blocked in browser)
+//   REGISTER: Backend MongoDB → Firebase email verification only
+//   WAKEUP:   Single silent ping on app load (fire & forget, no retry loop)
 // ============================================================
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import axios from 'axios';
 import { API_ROUTES } from '../api/config';
+
+// Silent axios instance — never throws on any HTTP status
+// Prevents browser console errors from ping requests
+const silentAxios = axios.create();
+silentAxios.defaults.validateStatus = () => true;
 
 const useAuthStore = create(
   persist(
@@ -19,54 +27,69 @@ const useAuthStore = create(
       loading: false,
       error: null,
 
-      // ── WAKE UP BACKEND ───────────────────────────────────────
-      // Pings the server on app load to pre-warm Render's free tier
-      wakeUpBackend: async () => {
-        const MAX = 10;
-        const DELAY = 5000;
-        for (let i = 1; i <= MAX; i++) {
-          try {
-            await axios.get(`${API_ROUTES.AUTH}/ping`, { timeout: 15000 });
-            console.log('[AuthStore] ✅ Backend is awake');
-            return;
-          } catch {
-            if (i < MAX) await new Promise(r => setTimeout(r, DELAY));
-          }
-        }
-        console.warn('[AuthStore] ⚠️ Backend ping timed out after retries');
+      // ── WAKE UP BACKEND (fire & forget) ──────────────────────
+      // One silent ping on app load to pre-warm Render's free tier.
+      // No retry loop — login handles cold start with its own retries.
+      // Uses silent axios so NO 502 errors flood the browser console.
+      wakeUpBackend: () => {
+        // Fire and forget — don't await, don't retry, don't log errors
+        silentAxios
+          .get(`${API_ROUTES.AUTH}/ping`, { timeout: 30000 })
+          .then((res) => {
+            // Any response (even 404) means server is alive
+            if (res.status !== 502 && res.status !== 503) {
+              console.log('[AuthStore] ✅ Backend is awake (status:', res.status, ')');
+            }
+          })
+          .catch(() => {
+            // Network-level error (ECONNRESET etc.) — ignore silently
+          });
       },
 
       // ── LOGIN ─────────────────────────────────────────────────
-      // Primary: Backend MongoDB login → JWT (with auto-retry on 502)
-      // Fallback: Firebase sync (for legacy accounts with no password in MongoDB)
-      // Firebase is NOT used here — avoids identitytoolkit.googleapis.com dependency
       login: async (email, password) => {
         set({ loading: true, error: null });
 
-        // Helper: attempt backend login with retry on 502/503 (cold start)
-        // Render free tier can take up to 50s to wake — 10 retries × 5s = 50s max
-        const attemptBackendLogin = async () => {
-          const MAX_RETRIES = 10;
-          const RETRY_DELAY = 5000;
+        // Retry POST /login up to 6 times on 502/503 (cold start)
+        // 6 × 5s = 30 seconds max wait — enough for Render cold start
+        const attemptLogin = async () => {
+          const MAX = 6;
+          const DELAY = 5000;
           let lastErr = null;
 
-          for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+          for (let attempt = 1; attempt <= MAX; attempt++) {
             try {
-              return await axios.post(`${API_ROUTES.AUTH}/login`, { email, password }, { timeout: 15000 });
+              return await axios.post(
+                `${API_ROUTES.AUTH}/login`,
+                { email, password },
+                { timeout: 12000 }
+              );
             } catch (err) {
               const status = err.response?.status;
-              const msg = err.response?.data?.error || '';
+              const msg = (err.response?.data?.error || '').toLowerCase();
 
-              // Wrong credentials — don't retry
-              if (status === 401 || status === 400 || msg.toLowerCase().includes('invalid')) {
+              // Wrong credentials → fail immediately, no retry
+              if (
+                status === 401 ||
+                status === 400 ||
+                msg.includes('invalid') ||
+                msg.includes('incorrect') ||
+                msg.includes('not found')
+              ) {
                 throw err;
               }
 
-              // 502/503 (cold start) — retry after delay
-              if (status === 502 || status === 503 || !status) {
+              // Legacy account: no password hash in MongoDB
+              // bcrypt.compare(pass, undefined) → "Illegal arguments: string, undefined"
+              if (status === 500 && msg.includes('illegal arguments')) {
+                throw err; // handled below
+              }
+
+              // 502/503 = Render cold start → wait and retry
+              if (status === 502 || status === 503 || !err.response) {
                 lastErr = err;
-                if (attempt < MAX_RETRIES) {
-                  await new Promise(r => setTimeout(r, RETRY_DELAY));
+                if (attempt < MAX) {
+                  await new Promise((r) => setTimeout(r, DELAY));
                   continue;
                 }
               }
@@ -77,144 +100,92 @@ const useAuthStore = create(
         };
 
         try {
-          // Primary: MongoDB backend login (with cold-start retry)
-          const loginRes = await attemptBackendLogin();
-          const { token, ...userData } = loginRes.data;
+          const res = await attemptLogin();
+          const { token, ...userData } = res.data;
 
-          set({
-            user: { ...userData, emailVerified: true },
-            token,
-            loading: false,
-          });
+          set({ user: { ...userData, emailVerified: true }, token, loading: false });
           return { success: true };
 
-        } catch (backendErr) {
-          const status = backendErr.response?.status;
-          const msg = backendErr.response?.data?.error || '';
+        } catch (err) {
+          const status = err.response?.status;
+          const msg = (err.response?.data?.error || '').toLowerCase();
 
-          // Wrong credentials — fail immediately, no fallback
-          if (status === 401 || status === 400 || msg.toLowerCase().includes('invalid')) {
+          // Wrong credentials
+          if (
+            status === 401 ||
+            status === 400 ||
+            msg.includes('invalid') ||
+            msg.includes('incorrect') ||
+            msg.includes('not found')
+          ) {
             set({ error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة', loading: false });
             return { success: false };
           }
 
-          // Legacy account: no password hash in MongoDB (created via old Firebase-only flow)
-          // bcrypt.compare(password, undefined) → "Illegal arguments: string, undefined"
-          if (status === 500 && msg.toLowerCase().includes('illegal arguments')) {
+          // Legacy account — no password hash stored in DB
+          if (status === 500 && msg.includes('illegal arguments')) {
             set({ error: 'NO_PASSWORD_HASH', loading: false });
             return { success: false, noPasswordHash: true };
           }
 
-          // Backend unreachable or legacy account (no password hash in MongoDB)
-          // Fallback: try Firebase sign-in + sync to get user data
-          console.warn('[AuthStore] Backend login failed, trying Firebase fallback:', msg);
-
-          try {
-            const { auth } = await import('../config/firebase');
-            const { signInWithEmailAndPassword, signOut } = await import('firebase/auth');
-
-            const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            const firebaseUser = userCredential.user;
-
-            if (!firebaseUser.emailVerified) {
-              await signOut(auth);
-              set({ error: 'يرجى تفعيل بريدك الإلكتروني أولاً', loading: false });
-              return { success: false, notVerified: true };
-            }
-
-            const firebaseToken = await firebaseUser.getIdToken(true);
-
-            let syncedUser = {
-              email: firebaseUser.email,
-              fullName: firebaseUser.displayName || firebaseUser.email.split('@')[0],
-              plan: 'free',
-              emailVerified: true,
-            };
-
-            try {
-              const syncRes = await axios.post(`${API_ROUTES.AUTH}/sync`, {
-                firebaseUID: firebaseUser.uid,
-                email: firebaseUser.email,
-                fullName: firebaseUser.displayName || firebaseUser.email.split('@')[0],
-              });
-              syncedUser = { ...syncRes.data.user, emailVerified: true };
-            } catch {
-              console.warn('[AuthStore] Sync failed, using Firebase data');
-            }
-
-            await signOut(auth).catch(() => {});
-            set({ user: syncedUser, token: firebaseToken, loading: false });
-            return { success: true };
-
-          } catch (firebaseErr) {
-            if (
-              firebaseErr.code === 'auth/user-not-found' ||
-              firebaseErr.code === 'auth/wrong-password' ||
-              firebaseErr.code === 'auth/invalid-credential'
-            ) {
-              set({ error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة', loading: false });
-              return { success: false };
-            }
-            // Both backend and Firebase failed (network issues)
-            set({ error: 'تعذّر الاتصال بالخادم. تحقق من اتصالك بالإنترنت وحاول مرة أخرى.', loading: false });
-            return { success: false };
-          }
+          // Backend completely unreachable after all retries
+          set({
+            error: 'تعذّر الاتصال بالخادم. الخادم قد يكون في وضع السكون، انتظر دقيقة وأعد المحاولة.',
+            loading: false,
+          });
+          return { success: false };
         }
       },
 
       // ── REGISTER ──────────────────────────────────────────────
-      // 1. Backend → create account in MongoDB (stores password hash)
-      // 2. Firebase → create account ONLY to send verification email
+      // Step 1: Backend MongoDB → create account (stores password hash)
+      // Step 2: Firebase → send verification email only
       register: async (fullName, email, password) => {
         set({ loading: true, error: null });
 
         try {
-          // Step 1: Create account in MongoDB backend
           await axios.post(`${API_ROUTES.AUTH}/register`, { fullName, email, password });
 
-          // Step 2: Firebase — send verification email only
-          const { auth } = await import('../config/firebase');
-          const {
-            createUserWithEmailAndPassword,
-            sendEmailVerification,
-            updateProfile,
-          } = await import('firebase/auth');
-
+          // Firebase — only for sending verification email
           try {
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            const firebaseUser = userCredential.user;
-            await updateProfile(firebaseUser, { displayName: fullName });
-            await sendEmailVerification(firebaseUser);
+            const { auth } = await import('../config/firebase');
+            const {
+              createUserWithEmailAndPassword,
+              sendEmailVerification,
+              updateProfile,
+            } = await import('firebase/auth');
+
+            const { user: fbUser } = await createUserWithEmailAndPassword(auth, email, password);
+            await updateProfile(fbUser, { displayName: fullName });
+            await sendEmailVerification(fbUser);
             console.log('[AuthStore] ✅ Verification email sent');
-          } catch (firebaseErr) {
-            console.warn('[AuthStore] Firebase verification setup failed:', firebaseErr.message);
+          } catch (fbErr) {
+            console.warn('[AuthStore] Firebase verification skipped:', fbErr.message);
           }
 
           set({ loading: false, error: null });
           return true;
 
         } catch (err) {
-          let errorMsg = err.response?.data?.error || err.message || 'Registration failed';
-          if (errorMsg.toLowerCase().includes('already') || err.code === 'auth/email-already-in-use') {
-            errorMsg = 'هذا البريد الإلكتروني مسجل بالفعل. يرجى تسجيل الدخول.';
+          const raw = err.response?.data?.error || err.message || '';
+          let msg = raw;
+          if (raw.toLowerCase().includes('already') || err.code === 'auth/email-already-in-use') {
+            msg = 'هذا البريد الإلكتروني مسجل بالفعل. يرجى تسجيل الدخول.';
           } else if (err.code === 'auth/weak-password') {
-            errorMsg = 'كلمة المرور ضعيفة. يجب أن تكون 8 أحرف على الأقل.';
+            msg = 'كلمة المرور ضعيفة. يجب أن تكون 8 أحرف على الأقل.';
           }
-          set({ error: errorMsg, loading: false });
+          set({ error: msg, loading: false });
           return false;
         }
       },
 
-      logout: () => {
-        set({ user: null, token: null });
-      },
+      logout: () => set({ user: null, token: null }),
 
       updateProfile: async (data) => {
         set({ loading: true, error: null });
         try {
-          const token = get().token;
           const res = await axios.put(`${API_ROUTES.AUTH}/profile`, data, {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: { Authorization: `Bearer ${get().token}` },
           });
           set({ user: res.data, loading: false });
           return true;
@@ -226,14 +197,11 @@ const useAuthStore = create(
 
       syncLocalUser: (data) => {
         if (!data) return;
-        set((state) => ({
-          user: state.user ? { ...state.user, ...data } : null,
-        }));
-        console.log('[AuthStore] 🔄 State synced:', data);
+        set((state) => ({ user: state.user ? { ...state.user, ...data } : null }));
       },
 
       getAuthHeader: () => {
-        const token = get().token;
+        const { token } = get();
         return token ? { Authorization: `Bearer ${token}` } : {};
       },
     }),
