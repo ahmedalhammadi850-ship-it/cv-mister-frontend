@@ -37,7 +37,7 @@ import useThemeStore from './store/useThemeStore';
 import useCMSStore from './store/useCMSStore';
 
 const ROUTE_KEY = 'cv_last_route';
-const SKIP_RESTORE = ['/', '/login', '/register', '/forgot-password'];
+const SKIP_RESTORE = ['/'];
 
 // Inner component to access useLocation inside Router
 function AppContent() {
