@@ -33,18 +33,29 @@ const useAuthStore = create(
             return { success: false, notVerified: true };
           }
 
-          // Sync with our backend to get custom user data and DB ID
-          const syncRes = await axios.post(`${API_ROUTES.AUTH}/sync`, {
-            firebaseUID: firebaseUser.uid,
-            email: firebaseUser.email,
-            fullName: firebaseUser.displayName || 'User'
-          });
-
           // Force refresh the token so it includes email_verified=true
           const token = await firebaseUser.getIdToken(true);
+
+          // Sync with our backend to get custom user data and DB ID
+          let backendUser = {
+            firebaseUID: firebaseUser.uid,
+            email: firebaseUser.email,
+            fullName: firebaseUser.displayName || 'User',
+            emailVerified: true,
+          };
+          try {
+            const syncRes = await axios.post(`${API_ROUTES.AUTH}/sync`, {
+              firebaseUID: firebaseUser.uid,
+              email: firebaseUser.email,
+              fullName: firebaseUser.displayName || 'User'
+            });
+            backendUser = { ...syncRes.data.user, emailVerified: true };
+          } catch (syncErr) {
+            console.warn('[AuthStore] Backend sync failed, using Firebase data only:', syncErr.message);
+          }
           
           set({ 
-            user: { ...syncRes.data.user, emailVerified: true }, 
+            user: backendUser, 
             token: token, 
             loading: false 
           });
