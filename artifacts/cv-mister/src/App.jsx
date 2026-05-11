@@ -44,6 +44,7 @@ function AppContent() {
   const loadSettings = useCMSStore((s) => s.loadSettings);
   const language = useStyleStore((s) => s.language);
   const user = useAuthStore((s) => s.user);
+  const token = useAuthStore((s) => s.token);
   const darkMode = useThemeStore((s) => s.darkMode);
   const location = useLocation();
   const navigate = useNavigate();
@@ -172,9 +173,9 @@ function AppContent() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             
-            {/* Auth Routes (Redirect to dashboard only if fully verified) */}
-            <Route path="/login" element={(!user || !user.emailVerified) ? <Login /> : <Navigate to="/dashboard" />} />
-            <Route path="/register" element={(!user || !user.emailVerified) ? <Register /> : <Navigate to="/dashboard" />} />
+            {/* Auth Routes (Redirect to dashboard if user + token exist in store) */}
+            <Route path="/login" element={(user && token) ? <Navigate to="/dashboard" /> : <Login />} />
+            <Route path="/register" element={(user && token) ? <Navigate to="/dashboard" /> : <Register />} />
             <Route path="/verify-email" element={<VerifyEmail />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password/:token" element={<ResetPassword />} />
