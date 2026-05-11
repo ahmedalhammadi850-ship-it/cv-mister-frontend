@@ -210,16 +210,39 @@ const useCMSStore = create(
 
       loadSettings: async () => {
         set({ isLoading: true });
-        try {
-          const res = await axios.get(PUBLIC_API_URL);
-          if (res.data.success && res.data.settings) {
-            set({ settings: res.data.settings });
+        const MAX_RETRIES = 3;
+        const RETRY_DELAY_MS = 4000;
+
+        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+          try {
+            const res = await axios.get(PUBLIC_API_URL, { timeout: 15000 });
+            if (res.status === 502 || res.status === 503) {
+              throw new Error(`Backend not ready (${res.status})`);
+            }
+            if (res.data?.success && res.data?.settings) {
+              set({ settings: res.data.settings });
+            }
+            set({ isLoading: false });
+            return;
+          } catch (error) {
+            const is502 = error?.response?.status === 502 ||
+                          error?.response?.status === 503 ||
+                          error?.message?.includes('502') ||
+                          error?.message?.includes('503') ||
+                          error?.message?.includes('Backend not ready') ||
+                          error?.code === 'ERR_BAD_RESPONSE';
+
+            if (is502 && attempt < MAX_RETRIES) {
+              await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
+              continue;
+            }
+            if (!is502) {
+              console.warn('[CMS] Failed to load settings, using defaults.');
+            }
+            break;
           }
-        } catch (error) {
-          console.error("Failed to load CMS content from API", error);
-        } finally {
-          set({ isLoading: false });
         }
+        set({ isLoading: false });
       },
 
       syncSettings: async (newSettings) => {

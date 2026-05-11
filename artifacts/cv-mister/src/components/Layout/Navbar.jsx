@@ -10,8 +10,9 @@ import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FileText, Download, RotateCcw, Sun, Moon, Menu, X, 
-  ChevronLeft, ChevronRight, User, LogOut, Loader2, Globe
+  ChevronLeft, ChevronRight, User, LogOut, Loader2, Globe, MonitorDown
 } from 'lucide-react';
+import { usePWAInstall } from '../../hooks/usePWAInstall';
 import { saveAs } from 'file-saver';
 import { t } from '../../utils/locales';
 import useResumeStore from '../../store/useResumeStore';
@@ -25,6 +26,7 @@ export default function Navbar() {
   const { language, setLanguage, resetStyles } = useStyleStore();
   const { user, logout } = useAuthStore();
   const { darkMode, toggleDarkMode } = useThemeStore();
+  const { canInstall, isInstalling, installApp } = usePWAInstall();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -276,6 +278,21 @@ export default function Navbar() {
                 <option value="ar">عربي</option>
               </select>
             </div>
+
+            {/* PWA Install Button — only shown when browser fires beforeinstallprompt */}
+            {canInstall && (
+              <motion.button
+                className="nav-action-btn nav-action-secondary"
+                onClick={installApp}
+                disabled={isInstalling}
+                whileTap={{ scale: 0.9 }}
+                title={isAr ? 'تثبيت التطبيق' : 'Install App'}
+                aria-label={isAr ? 'تثبيت التطبيق' : 'Install App'}
+              >
+                <MonitorDown size={16} />
+                <span className="nav-action-label">{isAr ? 'تثبيت' : 'Install'}</span>
+              </motion.button>
+            )}
 
             {/* Dark Mode Toggle */}
             <motion.button 

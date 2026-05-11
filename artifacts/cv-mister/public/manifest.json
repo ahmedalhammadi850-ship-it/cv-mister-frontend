@@ -1,0 +1,50 @@
+{
+  "name": "CV-Mister | Professional Resume Builder",
+  "short_name": "CV-Mister",
+  "description": "Build professional resumes with AI — Full Arabic & English support, 10+ templates, PDF export.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f1f5f9",
+  "theme_color": "#6366f1",
+  "lang": "ar",
+  "dir": "rtl",
+  "categories": ["productivity", "business", "education"],
+  "icons": [
+    {
+      "src": "/icons.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "إنشاء سيرة ذاتية",
+      "short_name": "سيرة ذاتية",
+      "url": "/builder/resume",
+      "icons": [{ "src": "/icons.svg", "sizes": "any" }]
+    },
+    {
+      "name": "لوحة التحكم",
+      "short_name": "Dashboard",
+      "url": "/dashboard",
+      "icons": [{ "src": "/icons.svg", "sizes": "any" }]
+    }
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false
+}
