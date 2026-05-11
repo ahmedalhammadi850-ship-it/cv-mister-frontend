@@ -111,6 +111,11 @@ function AppContent() {
     } catch {}
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Wake up Render backend on app load (prevents cold-start login failure)
+  useEffect(() => {
+    useAuthStore.getState().wakeUpBackend();
+  }, []);
+
   // Load CMS content and Sync dark class with HTML element
   useEffect(() => {
     loadSettings(); // Fetch content from backend
